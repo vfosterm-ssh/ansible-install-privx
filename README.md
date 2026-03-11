@@ -1,5 +1,9 @@
 # PrivX Installation and Configuration Automation – Ansible
 
+
+[![Ansible Tests](https://img.shields.io/github/actions/workflow/status/SSHcom/ansible-install-privx/ansible-tests.yml?style=for-the-badge&label=Ansible%20Tests)](https://github.com/SSHcom/ansible-install-privx/actions)
+[![Last Commit](https://img.shields.io/github/last-commit/SSHcom/ansible-install-privx.svg?style=for-the-badge)](https://github.com/SSHcom/ansible-install-privx/commits)
+
 This repository contains Ansible roles and playbooks for automated PrivX and additional components installation and configuration on multiple Linux distributions.
 
 ## Overview
@@ -476,4 +480,4 @@ The CA chain certificate deployment is completely optional and will be skipped i
 
 ## License
 
-[![See LICENSE](https://img.shields.io/github/license/SSHcom/ansible-install-privx-dev.svg?style=for-the-badge)](LICENSE)
+[![See LICENSE](https://img.shields.io/github/license/SSHcom/ansible-install-privx.svg?style=for-the-badge)](LICENSE)
