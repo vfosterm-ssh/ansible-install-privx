@@ -1,0 +1,23 @@
+---
+# PrivX Additional Nodes Configuration Role - Main Tasks
+
+- name: Include PrivX installation verification
+  ansible.builtin.include_tasks: verify_installation.yml
+
+- name: Determine if any nodes need configuration
+  ansible.builtin.set_fact:
+    any_nodes_need_config: "{{ ansible_play_hosts | map('extract', hostvars, 'keyvault_exists') | map(attribute='stat.exists') | select('equalto', false) | list | length > 0 }}"
+  run_once: true
+
+- name: Prepare backup archive for restoration
+  ansible.builtin.include_tasks: prepare_backup_archive.yml
+  run_once: true
+  when: any_nodes_need_config | default(false)
+
+- name: Include backup restoration tasks
+  ansible.builtin.include_tasks: restore_backup.yml
+  when: not keyvault_exists.stat.exists
+
+- name: Include service verification tasks
+  ansible.builtin.include_tasks: verify_services.yml
+  when: not keyvault_exists.stat.exists

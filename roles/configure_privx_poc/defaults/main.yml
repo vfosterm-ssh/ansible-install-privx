@@ -1,0 +1,11 @@
+---
+# PrivX Configuration Role - Default Variables
+
+privx_superuser: admin
+email_domain: example.com
+database_name: privx
+database_username: privx
+
+# Ansible connection settings
+REMOTE_USER: "{{ REMOTE_USER | default('rocky') }}"
+BECOME: "{{ BECOME | default('no') }}"

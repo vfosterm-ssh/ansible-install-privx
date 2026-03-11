@@ -1,0 +1,31 @@
+---
+# Post-configuration tasks for PrivX
+
+- name: Verify PrivX service status on primary nodes
+  ansible.builtin.systemd:
+    name: privx
+    state: started
+    enabled: true
+  register: service_status
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+
+- name: Display configuration completion
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                        PRIVX CONFIGURATION COMPLETE                          "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "✓ PrivX has been successfully configured on the primary node."
+      - ""
+      - "Access Information:"
+      - "=================="
+      - "• URL: https://{{ privx_dns_name }}"
+      - "• Username: {{ privx_superuser }}"
+      - "• Password: {{ superuser_password }}"
+      - ""
+      - "⚠ IMPORTANT: Save the password securely!"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"

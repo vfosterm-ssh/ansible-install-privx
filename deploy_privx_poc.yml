@@ -1,0 +1,68 @@
+---
+# PrivX Deployment Playbook PrivX on Single server for PoC
+
+# =============================================================================
+# INSTALLATION PHASE
+# =============================================================================
+
+- name: PrivX Deployment - Installation Phase
+  hosts: privx_primary
+  gather_facts: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags:
+    - install
+    - full_deployment
+  roles:
+    - install_privx
+
+# =============================================================================
+# PRIMARY CONFIGURATION PHASE
+# =============================================================================
+
+- name: PrivX Deployment - Single Node Configuration Phase
+  hosts: privx_primary
+  gather_facts: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags:
+    - configure
+    - full_deployment
+  roles:
+    - configure_privx_poc
+
+# =============================================================================
+# DEPLOYMENT COMPLETION
+# =============================================================================
+
+- name: PrivX Deployment - Completion Summary
+  hosts: localhost
+  gather_facts: false
+  tags:
+    - full_deployment
+  tasks:
+    - name: Display deployment completion summary
+      ansible.builtin.debug:
+        msg:
+          - "════════════════════════════════════════════════════════════════════════════════"
+          - "                        PRIVX DEPLOYMENT COMPLETE                            "
+          - "════════════════════════════════════════════════════════════════════════════════"
+          - ""
+          - "✓ PrivX has been successfully deployed and configured."
+          - ""
+          - "Access Information:"
+          - "=================="
+          - "• URL: https://{{ groups['privx_primary'][0] }}"
+          - "• Username: {{ privx_superuser | default('admin') }}"
+          - "• Password: {{ superuser_password }}"
+          - ""
+          - "Next Steps:"
+          - "==========="
+          - "1. Access PrivX web interface using the URL above"
+          - "2. Complete initial setup and licensing"
+          - "3. Install and configure addtional components if required"
+          - ""
+          - "════════════════════════════════════════════════════════════════════════════════"
+          - "                    DEPLOYMENT SUCCESSFULLY COMPLETED                       "
+          - "════════════════════════════════════════════════════════════════════════════════"
+      run_once: true

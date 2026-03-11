@@ -1,0 +1,26 @@
+---
+# Deploy PrivX Extender configuration
+
+- name: Copy extender configuration file to target location
+  ansible.builtin.copy:
+    src: "./configuration_files/{{ inventory_hostname }}-extender-config.toml"
+    dest: /opt/privx/etc/extender-config.toml
+    mode: '0600'
+    owner: root
+    group: root
+  register: config_deployed
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display configuration deployment result
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                      CONFIGURATION DEPLOYMENT RESULT                         "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "• Source: ./configuration_files/{{ inventory_hostname }}-extender-config.toml"
+      - "• Destination: /opt/privx/etc/extender-config.toml"
+      - "• Status: {{ 'Updated' if config_deployed.changed else 'Already up to date' }}"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"

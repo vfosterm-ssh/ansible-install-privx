@@ -1,0 +1,38 @@
+---
+# Pre-configuration tasks for PrivX
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - privx_dns_name is defined
+      - database_password is defined
+      - postgres_address is defined
+      - superuser_password is defined
+    fail_msg: |
+      REQUIRED VARIABLES MISSING
+
+      The following variables must be provided:
+        • privx_dns_name: DNS name for PrivX (e.g., privx.example.com)
+        • database_password: Password for database user
+        • postgres_address: PostgreSQL server address
+        • superuser_password: Password for PrivX superuser account
+
+    success_msg: "All required variables are provided. Proceeding with PrivX configuration."
+
+- name: Display configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                         PRIVX CONFIGURATION SUMMARY                          "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "• DNS Name: {{ privx_dns_name }}"
+      - "• Load Balancer Mode: {{ privx_lb }} ({{ 'Enabled' if privx_lb == '1' else 'Disabled' }})"
+      - "• Total PrivX Nodes: {{ groups['privx_primary'] | length + groups['privx_additional_nodes'] | default([]) | length }}"
+      - "• Superuser: {{ privx_superuser }}"
+      - "• Email Domain: {{ email_domain }}"
+      - "• Database Name: {{ database_name }}"
+      - "• Database Username: {{ database_username }}"
+      - "• Database Server: {{ postgres_address }}:{{ database_port }}"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"

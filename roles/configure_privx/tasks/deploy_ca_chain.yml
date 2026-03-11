@@ -1,0 +1,65 @@
+---
+# Deploy CA chain certificate
+
+- name: Check if CA chain certificate already exists on target
+  ansible.builtin.stat:
+    path: "/etc/nginx/ssl/ca_chain.crt"
+  register: existing_ca_chain
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Check if local CA chain certificate exists
+  ansible.builtin.stat:
+    path: "./ca_chain.crt"
+    checksum_algorithm: sha256
+  register: local_ca_chain
+  delegate_to: localhost
+  become: false
+
+- name: Get checksum of remote CA chain certificate
+  ansible.builtin.stat:
+    path: "/etc/nginx/ssl/ca_chain.crt"
+    checksum_algorithm: sha256
+  register: remote_ca_chain
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when: existing_ca_chain.stat.exists
+
+- name: Set CA chain deployment needed fact
+  ansible.builtin.set_fact:
+    ca_chain_deployment_needed: >-
+      {{
+        not local_ca_chain.stat.exists or
+        not existing_ca_chain.stat.exists or
+        (local_ca_chain.stat.checksum | default('') != remote_ca_chain.stat.checksum | default(''))
+      }}
+
+- name: Display CA chain certificate already up-to-date message
+  ansible.builtin.debug:
+    msg: "CA chain certificate is already up-to-date - deployment skipped"
+  when: not ca_chain_deployment_needed
+
+- name: Upload CA chain certificate to PrivX primary node
+  ansible.builtin.copy:
+    src: "./ca_chain.crt"
+    dest: "/etc/nginx/ssl/ca_chain.crt"
+    mode: '0644'
+    owner: root
+    group: root
+  register: ca_chain_uploaded
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when: ca_chain_deployment_needed
+
+- name: Update trust anchor with CA chain certificate
+  ansible.builtin.command:
+    cmd: /opt/privx/scripts/init_nginx.sh update-trust /etc/nginx/ssl/ca_chain.crt
+  register: trust_anchor_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when: ca_chain_deployment_needed
+
+- name: Display trust anchor update result
+  ansible.builtin.debug:
+    msg: "CA chain certificate deployed and trust anchor updated successfully"
+  when: ca_chain_deployment_needed

@@ -1,0 +1,15 @@
+---
+# PrivX Web Access Gateway (WAG) Deployment Playbook
+# This playbook handles PrivX Carrier and Web Proxy installation and configuration
+
+# =============================================================================
+# WAG DEPLOYMENT PHASE
+# =============================================================================
+
+- name: PrivX WAG Deployment
+  hosts: privxcarrier:privxwebproxy
+  gather_facts: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  roles:
+    - deploy_wag

@@ -1,0 +1,100 @@
+---
+# Post-installation tasks for PrivX WAG
+
+- name: Run Carrier postinstall script
+  when: is_carrier
+  block:
+    - name: Run PrivX Carrier postinstall script
+      ansible.builtin.command:
+        cmd: /opt/privx/scripts/carrier-postinstall.sh
+      register: carrier_postinstall_result
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+      timeout: 120
+
+    - name: Display carrier postinstall script output
+      ansible.builtin.debug:
+        var: carrier_postinstall_result.stdout_lines
+        verbosity: 0
+      when:
+        - show_script_output | default(false)
+        - carrier_postinstall_result.stdout_lines is defined
+
+    - name: Check PrivX Carrier service status
+      ansible.builtin.systemd:
+        name: privx-carrier
+        state: started
+        enabled: true
+      register: carrier_service_status
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+- name: Run Web Proxy postinstall script
+  when: is_webproxy
+  block:
+    - name: Run PrivX Web Proxy postinstall script
+      ansible.builtin.command:
+        cmd: /opt/privx/scripts/web-proxy-postinstall.sh
+      register: webproxy_postinstall_result
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+      timeout: 120
+
+    - name: Display web proxy postinstall script output
+      ansible.builtin.debug:
+        var: webproxy_postinstall_result.stdout_lines
+        verbosity: 0
+      when:
+        - show_script_output | default(false)
+        - webproxy_postinstall_result.stdout_lines is defined
+
+    - name: Check PrivX Web Proxy service status
+      ansible.builtin.systemd:
+        name: privx-web-proxy
+        state: started
+        enabled: true
+      register: webproxy_service_status
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+- name: Display Carrier installation completion
+  ansible.builtin.debug:
+    msg:
+      - "╔══════════════════════════════════════════════════════════════════════════════╗"
+      - "║                   PRIVX CARRIER INSTALLATION COMPLETE                       ║"
+      - "╚══════════════════════════════════════════════════════════════════════════════╝"
+      - ""
+      - "Installation Summary:"
+      - "===================="
+      - "• Node: {{ inventory_hostname }}"
+      - "• Package: {{ carrier_package_name }}"
+      - "• Configuration: Deployed"
+      - "• Service: {{ 'Running' if carrier_service_status.status.ActiveState == 'active' else 'Not running' }}"
+      - ""
+      - "Troubleshooting:"
+      - "==============="
+      - "If the Carrier failed to register to PrivX, you may find additional"
+      - "troubleshooting information from the Carrier host at:"
+      - "/var/log/privx/privx-carrier.log"
+  when: is_carrier
+
+- name: Display Web Proxy installation completion
+  ansible.builtin.debug:
+    msg:
+      - "╔══════════════════════════════════════════════════════════════════════════════╗"
+      - "║                  PRIVX WEB PROXY INSTALLATION COMPLETE                      ║"
+      - "╚══════════════════════════════════════════════════════════════════════════════╝"
+      - ""
+      - "Installation Summary:"
+      - "===================="
+      - "• Node: {{ inventory_hostname }}"
+      - "• Package: {{ webproxy_package_name }}"
+      - "• Configuration: Deployed"
+      - "• Service: {{ 'Running' if webproxy_service_status.status.ActiveState == 'active' else 'Not running' }}"
+      - ""
+      - "Troubleshooting:"
+      - "==============="
+      - "If the Web Proxy failed to register to PrivX, you may find additional"
+      - "troubleshooting information from the Web Proxy host at:"
+      - "/var/log/privx/privx-web-proxy.log"
+  when: is_webproxy

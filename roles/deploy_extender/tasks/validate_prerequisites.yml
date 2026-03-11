@@ -1,0 +1,55 @@
+---
+# Validate prerequisites for PrivX Extender installation
+
+- name: Detect OS distribution and version
+  ansible.builtin.setup:
+    filter: ansible_distribution*
+  when: ansible_facts['distribution'] is not defined
+
+- name: Display detected OS information
+  ansible.builtin.debug:
+    msg: "✓ Detected OS: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}"
+
+- name: Validate supported operating system
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+      - (ansible_facts['distribution'] in ['RedHat', 'Rocky'] and ansible_facts['distribution_major_version'] in ['8', '9'])
+    fail_msg: |
+      UNSUPPORTED OPERATING SYSTEM
+
+      PrivX Extender is only supported on:
+      • Red Hat Enterprise Linux 8 or 9
+      • Rocky Linux 8 or 9
+
+      Current system: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}
+
+- name: Check for extender configuration file
+  ansible.builtin.stat:
+    path: "./configuration_files/{{ inventory_hostname }}-extender-config.toml"
+  register: extender_config_file
+  delegate_to: localhost
+  become: false
+
+- name: Validate extender configuration file exists
+  ansible.builtin.assert:
+    that:
+      - extender_config_file.stat.exists
+    fail_msg: |
+      EXTENDER CONFIGURATION FILE NOT FOUND
+
+      Configuration file not found: ./configuration_files/{{ inventory_hostname }}-extender-config.toml
+
+      To obtain the configuration file:
+      1. Access PrivX web interface
+      2. Go to Administration → Deployment → Deploy PrivX VPC/VPN Extenders
+      3. Download the extender configuration file
+      4. Save it as: ./configuration_files/{{ inventory_hostname }}-extender-config.toml
+
+      The configuration file is required before proceeding with installation.
+
+    success_msg: "Extender configuration file found: {{ inventory_hostname }}-extender-config.toml"
+
+- name: Display FIPS mode setting
+  ansible.builtin.debug:
+    msg: "FIPS mode: {{ 'Enabled' if extender_fips_enabled | bool else 'Disabled' }} - Package: {{ 'PrivX-Extender-FIPS' if (extender_fips_enabled | bool and ansible_facts['distribution'] in ['RedHat', 'Rocky'] and ansible_facts['distribution_major_version'] == '9') else 'PrivX-Extender' }}"

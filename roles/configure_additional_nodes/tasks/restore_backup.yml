@@ -1,0 +1,92 @@
+---
+# Restore backup on additional nodes
+
+- name: Create remote backup directory
+  ansible.builtin.file:
+    path: "{{ remote_backup_dir }}"
+    state: directory
+    mode: '0755'
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Copy backup archive to additional nodes
+  ansible.builtin.copy:
+    src: "{{ backup_archive_path }}"
+    dest: "{{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
+    mode: '0644'
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Extract backup archive on additional nodes
+  ansible.builtin.unarchive:
+    src: "{{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
+    dest: "{{ remote_backup_dir }}"
+    remote_src: true
+    mode: '0755'
+  register: extract_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Find extracted backup directory
+  ansible.builtin.find:
+    paths: "{{ remote_backup_dir }}"
+    file_type: directory
+    patterns: "*_*_*"
+  register: extracted_dirs
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Set backup directory path
+  ansible.builtin.set_fact:
+    backup_directory_path: "{{ extracted_dirs.files[0].path }}"
+  when: extracted_dirs.files | length > 0
+
+- name: Display backup directory information
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                       BACKUP DIRECTORY INFORMATION                           "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "• Archive: {{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
+      - "• Extracted to: {{ backup_directory_path }}"
+      - "• Directory Name: {{ backup_directory_path | basename }}"
+      - "• Node: {{ inventory_hostname }}"
+      - ""
+
+- name: Execute PrivX restore script
+  ansible.builtin.command:
+    cmd: /opt/privx/scripts/restore.sh {{ backup_directory_path }}
+  register: restore_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display restore script output
+  ansible.builtin.debug:
+    var: restore_result.stdout_lines
+    verbosity: 0
+  when:
+    - show_script_output | default(false)
+    - restore_result.stdout_lines is defined
+
+- name: Execute PrivX postinstall script
+  ansible.builtin.command:
+    cmd: /opt/privx/scripts/postinstall.sh
+  register: postinstall_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display postinstall script output
+  ansible.builtin.debug:
+    var: postinstall_result.stdout_lines
+    verbosity: 0
+  when:
+    - show_script_output | default(false)
+    - postinstall_result.stdout_lines is defined
+
+- name: Clean up backup files on additional nodes
+  ansible.builtin.file:
+    path: "{{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
+    state: absent
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"

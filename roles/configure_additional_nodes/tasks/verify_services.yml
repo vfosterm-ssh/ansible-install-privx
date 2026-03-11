@@ -1,0 +1,16 @@
+---
+# Verify PrivX services on additional nodes
+
+- name: Verify PrivX service status on additional nodes
+  ansible.builtin.systemd:
+    name: privx
+    state: started
+    enabled: true
+  register: service_status
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display configuration completion
+  ansible.builtin.debug:
+    msg: "Additional nodes configuration complete - {{ ansible_play_hosts | length }} node(s) processed"
+  run_once: true

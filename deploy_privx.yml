@@ -1,0 +1,234 @@
+---
+# PrivX Deployment Playbook
+# This unified playbook handles complete PrivX deployment with role-based execution
+# Use tags to control which phases to execute
+
+# =============================================================================
+# INSTALLATION PHASE
+# =============================================================================
+
+- name: PrivX Deployment - Installation Phase
+  hosts: privx_primary:privx_additional_nodes
+  gather_facts: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags:
+    - install
+    - full_deployment
+  roles:
+    - install_privx
+
+# =============================================================================
+# READ POSTGRESQL DATABASE CA CERTFICATE (OPTIONAL)
+# =============================================================================
+
+- name: Read PostgreSQL database certificate or CA certificate
+  hosts: privx_primary
+  gather_facts: false
+  tags:
+    - configure_primary
+    - full_deployment
+  tasks:
+    - name: Handle PostgreSQL SSL certificate
+      when: database_sslmode in ['verify-ca', 'verify-full']
+      block:
+        - name: Check PostgreSQL SSL cert file exists
+          ansible.builtin.stat:
+            path: "{{ postgres_ssl_cert_file }}"
+          register: pg_cert_file
+          delegate_to: localhost
+
+        - name: Fail if PostgreSQL SSL cert file is missing
+          ansible.builtin.fail:
+            msg: >
+              database_sslmode is set to {{ database_sslmode }},
+              but PostgreSQL SSL certificate file not found at
+              A CA certificate is required when using
+              sslmode verify-ca or verify-full.
+              {{ postgres_ssl_cert_file }}.
+          when: not pg_cert_file.stat.exists
+          delegate_to: localhost
+
+        - name: Copy PostgreSQL SSL certificate
+          remote_user: "{{ REMOTE_USER | default('root') }}"
+          become: "{{ BECOME | default('no') }}"
+          ansible.builtin.copy:
+            src: "./{{ postgres_ssl_cert_file }}"
+            dest: /opt/privx/etc/privx-db-trust-anchor.pem
+            owner: root
+            group: privx
+            mode: '0644'
+          when: pg_cert_file.stat.exists
+
+# =============================================================================
+# PRIMARY CONFIGURATION PHASE
+# =============================================================================
+
+- name: PrivX Deployment - Primary Node Configuration Phase
+  hosts: privx_primary
+  gather_facts: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags:
+    - configure_primary
+    - configure
+    - full_deployment
+  roles:
+    - configure_privx
+
+# =============================================================================
+# CA CHAIN CERTIFICATE DEPLOYMENT (OPTIONAL)
+# =============================================================================
+
+- name: PrivX Deployment - CA Chain Certificate Deployment (Optional)
+  hosts: privx_primary
+  gather_facts: false
+  tags:
+    - deploy_ca_chain
+    - configure_primary
+    - configure
+    - full_deployment
+  tasks:
+    - name: Check if CA chain certificate exists locally
+      ansible.builtin.stat:
+        path: "./ca_chain.crt"
+      register: ca_chain_file
+      delegate_to: localhost
+
+    - name: Include CA chain certificate deployment tasks
+      ansible.builtin.include_tasks: roles/configure_privx/tasks/deploy_ca_chain.yml
+      when: ca_chain_file.stat.exists
+
+    - name: Display CA chain certificate skip message
+      ansible.builtin.debug:
+        msg: "CA chain certificate deployment skipped - no ca_chain.crt file found"
+      when: not ca_chain_file.stat.exists
+
+# =============================================================================
+# ADDITIONAL NODES CONFIGURATION PHASE
+# =============================================================================
+
+- name: PrivX Deployment - Backup Creation (if needed)
+  hosts: privx_primary
+  gather_facts: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags:
+    - configure_additional
+    - configure
+    - full_deployment
+  tasks:
+    - name: Check keyvault status on all additional nodes
+      ansible.builtin.stat:
+        path: /opt/privx/keyvault
+      register: additional_nodes_keyvault_status
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['privx_additional_nodes'] }}"
+      when: groups['privx_additional_nodes'] is defined and groups['privx_additional_nodes'] | length > 0
+
+    - name: Determine if backup creation is needed
+      ansible.builtin.set_fact:
+        backup_needed: "{{ additional_nodes_keyvault_status.results | selectattr('stat.exists', 'equalto', false) | list | length > 0 }}"
+      when: groups['privx_additional_nodes'] is defined and groups['privx_additional_nodes'] | length > 0
+
+    - name: Display backup creation decision
+      ansible.builtin.debug:
+        msg: "Backup creation: {{ 'required' if backup_needed else 'skipped - all nodes already configured' }}"
+      when: groups['privx_additional_nodes'] is defined and groups['privx_additional_nodes'] | length > 0
+
+    - name: Include backup configuration tasks
+      ansible.builtin.include_tasks: roles/configure_additional_nodes/tasks/backup_configuration.yml
+      when:
+        - groups['privx_additional_nodes'] is defined
+        - groups['privx_additional_nodes'] | length > 0
+        - backup_needed | default(false)
+
+- name: PrivX Deployment - Additional Nodes Configuration Phase
+  hosts: privx_additional_nodes
+  gather_facts: false
+  tags:
+    - configure_additional
+    - configure
+    - full_deployment
+  roles:
+    - configure_additional_nodes
+
+# =============================================================================
+# BACKUP CLEANUP
+# =============================================================================
+
+- name: PrivX Deployment - Backup Cleanup
+  hosts: localhost
+  gather_facts: false
+  tags:
+    - configure_additional
+    - configure
+    - full_deployment
+  tasks:
+    - name: Find backup archive files to clean up
+      ansible.builtin.find:
+        paths: "./backups"
+        patterns: "{{ groups['privx_primary'][0] }}-*.tar.gz"
+      register: cleanup_backup_files
+      when:
+        - groups['privx_additional_nodes'] is defined
+        - groups['privx_additional_nodes'] | length > 0
+
+    - name: Remove backup archive after successful deployment
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ cleanup_backup_files.files }}"
+      when:
+        - groups['privx_additional_nodes'] is defined
+        - groups['privx_additional_nodes'] | length > 0
+        - cleanup_backup_files.files is defined
+        - cleanup_backup_files.files | length > 0
+
+    - name: Display backup cleanup status
+      ansible.builtin.debug:
+        msg: "✓ Backup archive cleanup completed - {{ cleanup_backup_files.files | length }} file(s) removed from ./backups/"
+      when:
+        - groups['privx_additional_nodes'] is defined
+        - groups['privx_additional_nodes'] | length > 0
+        - cleanup_backup_files.files is defined
+        - cleanup_backup_files.files | length > 0
+
+# =============================================================================
+# DEPLOYMENT COMPLETION
+# =============================================================================
+
+- name: PrivX Deployment - Completion Summary
+  hosts: localhost
+  gather_facts: false
+  tags:
+    - summary
+    - full_deployment
+  tasks:
+    - name: Display deployment completion summary
+      ansible.builtin.debug:
+        msg:
+          - "════════════════════════════════════════════════════════════════════════════════"
+          - "                        PRIVX DEPLOYMENT COMPLETE                            "
+          - "════════════════════════════════════════════════════════════════════════════════"
+          - ""
+          - "✓ PrivX has been successfully deployed and configured."
+          - ""
+          - "Access Information:"
+          - "=================="
+          - "• URL: https://{{ privx_dns_name }}"
+          - "• Username: {{ privx_superuser | default('admin') }}"
+          - "• Password: {{ superuser_password }}"
+          - ""
+          - "Next Steps:"
+          - "==========="
+          - "1. Access PrivX web interface using the URL above"
+          - "2. Complete initial setup and licensing"
+          - "3. Install and configure addtional components if required"
+          - ""
+          - "════════════════════════════════════════════════════════════════════════════════"
+          - "                    DEPLOYMENT SUCCESSFULLY COMPLETED                       "
+          - "════════════════════════════════════════════════════════════════════════════════"
+      run_once: true

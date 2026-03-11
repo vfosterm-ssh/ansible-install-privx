@@ -1,0 +1,43 @@
+---
+# PrivX Configuration Role - Main Tasks
+
+- name: Check if keyvault already exists on primary node
+  ansible.builtin.stat:
+    path: /opt/privx/keyvault
+  register: global_keyvault_check
+
+- name: Set keyvault status fact
+  ansible.builtin.set_fact:
+    keyvault_already_exists: "{{ global_keyvault_check.stat.exists }}"
+
+- name: Display keyvault already exists message
+  ansible.builtin.debug:
+    msg: "PrivX keyvault already exists on {{ inventory_hostname }} - configuration tasks will be skipped"
+  when: keyvault_already_exists
+
+- name: Include pre-configuration tasks
+  ansible.builtin.include_tasks: pre_configuration.yml
+  when: not keyvault_already_exists
+
+- name: Include configuration validation tasks
+  ansible.builtin.include_tasks: validate_configuration.yml
+  when: not keyvault_already_exists
+
+- name: Check PostgreSQL SSL cert file exists
+  ansible.builtin.stat:
+    path: /opt/privx/etc/privx-db-trust-anchor.pem
+  register: db_trust_anchor
+
+- name: Include configuration validation tasks
+  ansible.builtin.include_tasks: validate_postgresql_ssl.yml
+  when:
+    - not keyvault_already_exists
+    - db_trust_anchor.stat.exists
+
+- name: Include PrivX core configuration tasks
+  ansible.builtin.include_tasks: configure_privx.yml
+  when: not keyvault_already_exists
+
+- name: Include post-configuration tasks
+  ansible.builtin.include_tasks: post_configuration.yml
+  when: not keyvault_already_exists

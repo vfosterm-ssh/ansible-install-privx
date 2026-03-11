@@ -1,0 +1,158 @@
+---
+- name: Detect OS distribution and version
+  ansible.builtin.setup:
+    filter: ansible_distribution*
+  when: ansible_facts['distribution'] is not defined
+
+- name: Display detected OS information
+  ansible.builtin.debug:
+    msg: "Detected OS on {{ inventory_hostname }}: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}"
+
+# Red Hat/Rocky Linux 9 setup
+- name: Setup repositories for Red Hat/Rocky Linux 9
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '9'
+  block:
+    - name: Install EPEL repository for RHEL/Rocky 9
+      ansible.builtin.dnf:
+        name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+        state: present
+        disable_gpg_check: true
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Install PostgreSQL server for RHEL/Rocky 9
+      ansible.builtin.dnf:
+        name: postgresql-server
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Install firewalld for RHEL/Rocky 9
+      ansible.builtin.dnf:
+        name: firewalld
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Import SSH.COM GPG key for RHEL/Rocky 9
+      ansible.builtin.rpm_key:
+        key: https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Add SSH.COM repository for RHEL/Rocky 9
+      ansible.builtin.get_url:
+        url: https://product-repository.ssh.com/rhel9/ssh-products.repo
+        dest: /etc/yum.repos.d/ssh-products.repo
+        mode: '0644'
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+
+# Red Hat/Rocky Linux 8 setup
+- name: Setup repositories for Red Hat/Rocky Linux 8
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '8'
+  block:
+    - name: Install EPEL repository for RHEL/Rocky 8
+      ansible.builtin.dnf:
+        name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+        state: present
+        disable_gpg_check: true
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Install epel-release for RHEL/Rocky 8
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Install firewalld for RHEL/Rocky 8
+      ansible.builtin.dnf:
+        name: firewalld
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Enable PostgreSQL 16 module for RHEL/Rocky 8
+      ansible.builtin.command:
+        cmd: dnf module enable postgresql:16 -y
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+      changed_when: true
+
+    - name: Install PostgreSQL server for RHEL/Rocky 8
+      ansible.builtin.dnf:
+        name: postgresql-server
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Import SSH.COM GPG key for RHEL/Rocky 8
+      ansible.builtin.rpm_key:
+        key: https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Add SSH.COM repository for RHEL/Rocky 8
+      ansible.builtin.get_url:
+        url: https://product-repository.ssh.com/rhel8/ssh-products.repo
+        dest: /etc/yum.repos.d/ssh-products.repo
+        mode: '0644'
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+
+# Amazon Linux 2023 setup
+- name: Setup repositories for Amazon Linux 2023
+  when:
+    - ansible_facts['distribution'] == 'Amazon'
+    - ansible_facts['distribution_major_version'] == '2023'
+  block:
+    - name: Install PostgreSQL 15 server for Amazon Linux 2023
+      ansible.builtin.dnf:
+        name: postgresql15-server
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Install libxcrypt-compat for Amazon Linux 2023
+      ansible.builtin.dnf:
+        name: libxcrypt-compat
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Install firewalld for Amazon Linux 2023
+      ansible.builtin.dnf:
+        name: firewalld
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Import SSH.COM GPG key for Amazon Linux 2023
+      ansible.builtin.rpm_key:
+        key: https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc
+        state: present
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Add SSH.COM repository for Amazon Linux 2023
+      ansible.builtin.get_url:
+        url: https://product-repository.ssh.com/rhel8/ssh-products.repo
+        dest: /etc/yum.repos.d/ssh-products.repo
+        mode: '0644'
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+
+- name: Verify repository setup completed
+  ansible.builtin.debug:
+    msg: "Repository setup completed on {{ inventory_hostname }}: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}"

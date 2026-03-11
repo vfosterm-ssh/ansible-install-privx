@@ -1,0 +1,15 @@
+#!/bin/bash
+export PRIVX_DNS_NAMES="{{ inventory_hostname }} {{ ansible_facts['fqdn'] }}"
+export PRIVX_IP_ADDRESSES="{{ ansible_facts['default_ipv4']['address'] }}"
+export PRIVX_NUM_TRUSTED_LB=0
+export PRIVX_SUPERUSER="{{ privx_superuser }}"
+export PRIVX_SUPERUSER_PASSWORD="{{ superuser_password }}"
+export PRIVX_SUPERUSER_EMAIL="{{ privx_superuser }}@{{ email_domain }}"
+export PRIVX_USE_EXTERNAL_DATABASE=0
+export PRIVX_DATABASE_NAME="{{ database_name }}"
+export PRIVX_DATABASE_USERNAME="{{ database_username }}"
+export PRIVX_DATABASE_PASSWORD="{{ database_password }}"
+export PRIVX_NOTIFICATION_BACKEND=db
+export PRIVX_KEYVAULT_PKCS11_ENABLE=0
+export PRIVX_NTP_SERVER="pool.ntp.org"
+/opt/privx/scripts/postinstall.sh

@@ -1,0 +1,52 @@
+---
+# Post-installation tasks for PrivX Extender
+
+- name: Run PrivX Extender postinstall script
+  ansible.builtin.command:
+    cmd: /opt/privx/scripts/extender-postinstall.sh
+  register: postinstall_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  timeout: 120
+
+- name: Display postinstall script output
+  ansible.builtin.debug:
+    var: postinstall_result.stdout_lines
+    verbosity: 0
+  when:
+    - show_script_output | default(false)
+    - postinstall_result.stdout_lines is defined
+
+- name: Check PrivX Extender service status
+  ansible.builtin.systemd:
+    name: privx-extender
+    state: started
+    enabled: true
+  register: extender_service_status
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display service status
+  ansible.builtin.debug:
+    msg: "✓ PrivX Extender service: {{ 'Running' if extender_service_status.status.ActiveState == 'active' else 'Not running' }} (Enabled: {{ 'Yes' if extender_service_status.enabled else 'No' }}) on {{ inventory_hostname }}"
+
+- name: Display installation completion
+  ansible.builtin.debug:
+    msg:
+      - "╔══════════════════════════════════════════════════════════════════════════════╗"
+      - "║                    PRIVX EXTENDER INSTALLATION COMPLETE                     ║"
+      - "╚══════════════════════════════════════════════════════════════════════════════╝"
+      - ""
+      - "Installation Summary:"
+      - "===================="
+      - "• Node: {{ inventory_hostname }}"
+      - "• Package: {{ extender_package_name }}"
+      - "• FIPS Mode: {{ extender_fips_enabled | bool }}"
+      - "• Configuration: Deployed"
+      - "• Service: {{ 'Running' if extender_service_status.status.ActiveState == 'active' else 'Not running' }}"
+      - ""
+      - "Troubleshooting:"
+      - "==============="
+      - "If the Extender failed to register to PrivX, you may find additional"
+      - "troubleshooting information from the Extender host at:"
+      - "/var/log/privx/privx-extender.log"

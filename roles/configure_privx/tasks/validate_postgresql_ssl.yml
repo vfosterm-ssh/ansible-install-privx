@@ -1,0 +1,26 @@
+---
+- name: Check if PostgreSQL connection is using SSL
+  when: database_sslmode in ['verify-ca', 'verify-full']
+  block:
+    - name: Check if PostgreSQL connection is using SSL (verify-ca or verify-full)
+      ansible.builtin.command: /usr/bin/psql "host={{ postgres_address }} user={{ database_username }} dbname={{ database_name }}" -t -A -c "SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid();"
+      environment:
+        PGPORT: "{{ database_port }}"
+        PGPASSWORD: "{{ database_password }}"
+        PGSSLMODE: "{{ database_sslmode }}"
+        PGSSLROOTCERT: /opt/privx/etc/privx-db-trust-anchor.pem
+      register: pg_ssl_check
+      changed_when: false
+      failed_when: pg_ssl_check.rc != 0
+
+    - name: Assert PostgreSQL SSL is enabled and verified
+      ansible.builtin.assert:
+        that:
+          - pg_ssl_check.stdout == "t"
+        fail_msg: >
+          PostgreSQL connection is NOT using SSL with {{ database_sslmode }}.
+          Ensure:
+            - Server SSL is enabled
+            - CA certificate is correct
+            - Server certificate hostname matches {{ postgres_address }}
+        success_msg: "PostgreSQL connection is using SSL with {{ database_sslmode }}."

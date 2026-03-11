@@ -1,0 +1,16 @@
+---
+# PrivX Primary Node Installation Tasks
+# Note: Global installation check is done in main.yml, so these tasks only run if PrivX is not installed
+
+- name: Install PrivX on primary node
+  ansible.builtin.dnf:
+    name: "{{ privx_package_name }}"
+    state: present
+  register: privx_install_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display installation result for primary node
+  ansible.builtin.debug:
+    msg: "PrivX successfully installed on {{ inventory_hostname }} (Primary){{ ' - Version: ' + privx_version if privx_version is defined else '' }}"
+  when: privx_install_result.changed

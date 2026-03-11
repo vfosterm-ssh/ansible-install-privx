@@ -1,0 +1,9 @@
+---
+# PrivX Additional Nodes Configuration Role - Default Variables
+
+# Remote backup directory on additional nodes
+remote_backup_dir: /var/backups/privx/
+
+# Ansible connection settings
+REMOTE_USER: "{{ REMOTE_USER | default('root') }}"
+BECOME: "{{ BECOME | default('no') }}"

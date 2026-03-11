@@ -1,0 +1,82 @@
+---
+# Install PrivX Web Proxy package and prerequisites
+
+# Install EPEL repository for RHEL/Rocky Linux 9
+- name: Install EPEL repository for RHEL/Rocky 9
+  ansible.builtin.dnf:
+    name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    state: present
+    disable_gpg_check: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '9'
+
+# Install EPEL repository for RHEL/Rocky Linux 8
+- name: Install EPEL repository for RHEL/Rocky 8
+  ansible.builtin.dnf:
+    name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    state: present
+    disable_gpg_check: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '8'
+
+- name: Install firewalld (dnf)
+  ansible.builtin.dnf:
+    name: firewalld
+    state: present
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when: ansible_facts['distribution'] in ['RedHat', 'Rocky']
+
+- name: Start and enable firewalld service
+  ansible.builtin.systemd:
+    name: firewalld
+    state: started
+    enabled: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Configure firewall ports for Web Proxy
+  ansible.builtin.firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop:
+    - "18080/tcp"
+    - "18443/tcp"
+    - "18444/tcp"
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Install PrivX Web Proxy package (dnf)
+  ansible.builtin.dnf:
+    name: "{{ webproxy_package_name }}"
+    state: present
+  register: webproxy_install_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+
+- name: Display Web Proxy installation result
+  ansible.builtin.debug:
+    msg: "✓ PrivX Web Proxy installed on {{ inventory_hostname }}"
+  when: webproxy_install_result.changed
+
+- name: Verify PrivX Web Proxy installation
+  ansible.builtin.command:
+    cmd: rpm -q PrivX-Web-Proxy
+  register: webproxy_verify
+  changed_when: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display installed PrivX Web Proxy version
+  ansible.builtin.debug:
+    msg: "✓ PrivX Web Proxy verified: {{ webproxy_verify.stdout }}"

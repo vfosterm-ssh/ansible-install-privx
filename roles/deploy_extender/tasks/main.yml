@@ -1,0 +1,47 @@
+---
+# PrivX Extender Installation Role - Main Tasks
+
+- name: Check if PrivX Extender is already installed globally
+  ansible.builtin.shell:
+    cmd: rpm -qa | grep -E "^PrivX-Extender"
+  register: global_extender_check
+  failed_when: false
+  changed_when: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags: status_check
+
+- name: Set PrivX Extender installation status fact
+  ansible.builtin.set_fact:
+    extender_already_installed: "{{ global_extender_check.rc == 0 and global_extender_check.stdout != '' }}"
+  tags: status_check
+
+- name: Display PrivX Extender already installed message
+  ansible.builtin.debug:
+    msg: "PrivX Extender is already installed on {{ inventory_hostname }} ({{ global_extender_check.stdout }}) - Installation tasks skipped"
+  when: extender_already_installed
+  tags: status_check
+
+- name: Include version consistency validation
+  ansible.builtin.include_tasks: validate_version_consistency.yml
+  when: not extender_already_installed
+
+- name: Include pre-installation validation
+  ansible.builtin.include_tasks: validate_prerequisites.yml
+  when: not extender_already_installed
+
+- name: Include repository setup tasks
+  ansible.builtin.include_tasks: setup_repository.yml
+  when: not extender_already_installed
+
+- name: Include extender installation tasks
+  ansible.builtin.include_tasks: install_extender.yml
+  when: not extender_already_installed
+
+- name: Include configuration deployment tasks
+  ansible.builtin.include_tasks: deploy_configuration.yml
+  when: not extender_already_installed
+
+- name: Include post-installation tasks
+  ansible.builtin.include_tasks: post_installation.yml
+  when: not extender_already_installed

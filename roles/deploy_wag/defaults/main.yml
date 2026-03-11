@@ -1,0 +1,12 @@
+---
+# PrivX Web Access Gateway (WAG) Installation Role - Default Variables
+
+# WAG version settings
+# If privx_version is defined, install specific version (e.g., "42.2")
+# If not defined, install latest available version
+carrier_package_name: "{{ 'PrivX-Carrier-' + privx_version if privx_version is defined else 'PrivX-Carrier' }}"
+webproxy_package_name: "{{ 'PrivX-Web-Proxy-' + privx_version if privx_version is defined else 'PrivX-Web-Proxy' }}"
+
+# Ansible connection settings
+REMOTE_USER: "{{ REMOTE_USER | default('rocky') }}"
+BECOME: "{{ BECOME | default('no') }}"

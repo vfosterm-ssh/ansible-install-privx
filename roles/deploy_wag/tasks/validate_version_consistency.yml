@@ -1,0 +1,149 @@
+---
+# Validate PrivX WAG version consistency
+
+- name: Check if PrivX is installed on primary node
+  ansible.builtin.command:
+    cmd: rpm -q PrivX
+  register: primary_privx_version
+  failed_when: false
+  changed_when: false
+  delegate_to: "{{ groups['privx_primary'][0] }}"
+  run_once: true
+
+- name: Check if any PrivX Carrier is already installed
+  ansible.builtin.shell:
+    cmd: rpm -qa | grep "PrivX-Carrier"
+  register: existing_carrier_check
+  failed_when: false
+  changed_when: false
+  delegate_to: "{{ groups['privxcarrier'][0] if groups['privxcarrier'] is defined and groups['privxcarrier'] | length > 0 else groups['privx_primary'][0] }}"
+  run_once: true
+
+- name: Check if any PrivX Web Proxy is already installed
+  ansible.builtin.shell:
+    cmd: rpm -qa | grep "PrivX-Web-Proxy"
+  register: existing_webproxy_check
+  failed_when: false
+  changed_when: false
+  delegate_to: "{{ groups['privxwebproxy'][0] if groups['privxwebproxy'] is defined and groups['privxwebproxy'] | length > 0 else groups['privx_primary'][0] }}"
+  run_once: true
+
+- name: Extract installed versions
+  ansible.builtin.set_fact:
+    installed_privx_version: "{{ primary_privx_version.stdout.split('-')[1] if primary_privx_version.rc == 0 else '' }}"
+    installed_carrier_version: "{{ existing_carrier_check.stdout.split('-')[2] if existing_carrier_check.rc == 0 and existing_carrier_check.stdout else '' }}"
+    installed_webproxy_version: "{{ existing_webproxy_check.stdout.split('-')[3] if existing_webproxy_check.rc == 0 and existing_webproxy_check.stdout else '' }}"
+  run_once: true
+
+- name: Display WAG version consistency check
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                        WAG VERSION CONSISTENCY CHECK                          "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "• PrivX Core Version: {{ installed_privx_version if installed_privx_version else 'Not found' }}"
+      - "• Installed Carrier Version: {{ installed_carrier_version if installed_carrier_version else 'None installed' }}"
+      - "• Installed Web Proxy Version: {{ installed_webproxy_version if installed_webproxy_version else 'None installed' }}"
+      - "• Requested Version: {{ privx_version if privx_version is defined else 'Latest' }}"
+      - ""
+  run_once: true
+
+- name: Fail if PrivX core not found
+  ansible.builtin.fail:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                             PRIVX CORE NOT FOUND                              "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "❌ PrivX core installation not found!"
+      - ""
+      - "PrivX WAG components require a PrivX core installation to be present."
+      - "Please install PrivX core first using:"
+      - ""
+      - "ansible-playbook -i inventory deploy_privx.yml --tags full_deployment"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"
+  when: primary_privx_version.rc != 0
+  run_once: true
+
+- name: Fail if version mismatch with PrivX core
+  ansible.builtin.fail:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                           VERSION MISMATCH ERROR                              "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "❌ WAG version mismatch with PrivX core!"
+      - ""
+      - "• PrivX Core Version: {{ installed_privx_version }}"
+      - "• Requested WAG Version: {{ privx_version }}"
+      - ""
+      - "WAG version must match PrivX core version. Please use:"
+      - ""
+      - "ansible-playbook -i inventory deploy_wag.yml -e privx_version={{ installed_privx_version }}"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"
+  when:
+    - primary_privx_version.rc == 0
+    - privx_version is defined
+    - installed_privx_version != privx_version
+  run_once: true
+
+- name: Fail if version mismatch with existing Carrier
+  ansible.builtin.fail:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                           VERSION MISMATCH ERROR                              "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "❌ Version mismatch with existing Carrier components!"
+      - ""
+      - "• Installed Carrier Version: {{ installed_carrier_version }}"
+      - "• Requested Version: {{ privx_version }}"
+      - ""
+      - "When adding WAG components to an existing deployment, all components must use"
+      - "the same version. Please use:"
+      - ""
+      - "ansible-playbook -i inventory deploy_wag.yml -e privx_version={{ installed_carrier_version }}"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"
+  when:
+    - existing_carrier_check.rc == 0
+    - privx_version is defined
+    - installed_carrier_version != privx_version
+  run_once: true
+
+- name: Fail if version mismatch with existing Web Proxy
+  ansible.builtin.fail:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                           VERSION MISMATCH ERROR                              "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "❌ Version mismatch with existing Web Proxy components!"
+      - ""
+      - "• Installed Web Proxy Version: {{ installed_webproxy_version }}"
+      - "• Requested Version: {{ privx_version }}"
+      - ""
+      - "When adding WAG components to an existing deployment, all components must use"
+      - "the same version. Please use:"
+      - ""
+      - "ansible-playbook -i inventory deploy_wag.yml -e privx_version={{ installed_webproxy_version }}"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"
+  when:
+    - existing_webproxy_check.rc == 0
+    - privx_version is defined
+    - installed_webproxy_version != privx_version
+  run_once: true
+
+- name: Display WAG version consistency success
+  ansible.builtin.debug:
+    msg: "✓ WAG version consistency check passed - proceeding with installation"
+  when:
+    - primary_privx_version.rc == 0
+    - (not privx_version is defined) or
+      (privx_version is defined and installed_privx_version == privx_version) or
+      (existing_carrier_check.rc != 0 and existing_webproxy_check.rc != 0)
+  run_once: true

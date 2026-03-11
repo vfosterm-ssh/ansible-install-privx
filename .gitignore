@@ -1,0 +1,41 @@
+# Ansible
+*.retry
+.ansible/
+
+# Configuration files (may contain sensitive data)
+configuration_files/*.toml
+
+# Log files
+*.log
+*.out
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.backup
+*.bak
+backups/
+
+# Test artifacts
+test_results/
+test_logs/
+
+# ca chain 
+ca_chain.crt
+privx-db-trust-anchor.pem
+
+# backups
+backups/

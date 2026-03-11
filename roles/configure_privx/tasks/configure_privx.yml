@@ -1,0 +1,39 @@
+---
+# PrivX Core Configuration Tasks
+# Note: Global keyvault check is done in main.yml, so these tasks only run if keyvault doesn't exist
+
+- name: Display calculated configuration values
+  ansible.builtin.debug:
+    msg: "Starting PrivX configuration with load balancer mode: {{ 'enabled' if privx_lb == '1' else 'disabled' }}"
+
+- name: Generate PrivX configuration script using template
+  ansible.builtin.template:
+    src: config.j2
+    dest: "{{ CONFIGURATION_SCRIPT }}"
+    mode: '0700'
+
+- name: Display installation log location
+  ansible.builtin.debug:
+    msg:
+      - "Troubleshooting:"
+      - "==============="
+      - "If you encounter issues during the Execute PrivX configuration script"
+      - "Consult the installation logs located at /var/logs/privx-install.log"
+
+- name: Execute PrivX configuration script
+  ansible.builtin.command: "{{ CONFIGURATION_SCRIPT }}"
+  register: config_result
+  timeout: 600
+
+- name: Display configuration script output
+  ansible.builtin.debug:
+    var: config_result.stdout_lines
+    verbosity: 0
+  when:
+    - show_script_output | default(false)
+    - config_result.stdout_lines is defined
+
+- name: Delete PrivX configuration script
+  ansible.builtin.file:
+    path: "{{ CONFIGURATION_SCRIPT }}"
+    state: absent

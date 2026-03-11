@@ -1,0 +1,38 @@
+---
+# Deploy PrivX WAG configuration files
+
+- name: Deploy Carrier configuration
+  when: is_carrier
+  block:
+    - name: Copy carrier configuration file to target location
+      ansible.builtin.copy:
+        src: "./configuration_files/{{ inventory_hostname }}-carrier-config.toml"
+        dest: /opt/privx/etc/carrier-config.toml
+        mode: '0600'
+        owner: root
+        group: root
+      register: carrier_config_deployed
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Display carrier configuration deployment result
+      ansible.builtin.debug:
+        msg: "✓ Carrier configuration deployed: ./configuration_files/{{ inventory_hostname }}-carrier-config.toml → /opt/privx/etc/carrier-config.toml ({{ 'Updated' if carrier_config_deployed.changed else 'Already up to date' }})"
+
+- name: Deploy Web Proxy configuration
+  when: is_webproxy
+  block:
+    - name: Copy web proxy configuration file to target location
+      ansible.builtin.copy:
+        src: "./configuration_files/{{ inventory_hostname }}-web-proxy-config.toml"
+        dest: /opt/privx/etc/web-proxy-config.toml
+        mode: '0600'
+        owner: root
+        group: root
+      register: webproxy_config_deployed
+      remote_user: "{{ REMOTE_USER | default('root') }}"
+      become: "{{ BECOME | default('no') }}"
+
+    - name: Display web proxy configuration deployment result
+      ansible.builtin.debug:
+        msg: "✓ Web Proxy configuration deployed: ./configuration_files/{{ inventory_hostname }}-web-proxy-config.toml → /opt/privx/etc/web-proxy-config.toml ({{ 'Updated' if webproxy_config_deployed.changed else 'Already up to date' }})"

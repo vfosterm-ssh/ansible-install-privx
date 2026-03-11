@@ -1,0 +1,21 @@
+#!/bin/bash
+export PRIVX_DNS_NAMES="{{ privx_dns_name }}"
+export PRIVX_NUM_TRUSTED_LB="{{ privx_lb }}"
+export PRIVX_IP_ADDRESSES="{{ privx_ips }}"
+export PRIVX_SUPERUSER="{{ privx_superuser }}"
+export PRIVX_SUPERUSER_PASSWORD="{{ superuser_password }}"
+export PRIVX_SUPERUSER_EMAIL="{{ privx_superuser }}@{{ email_domain }}"
+export PRIVX_USE_EXTERNAL_DATABASE=1
+export PRIVX_DATABASE_NAME="{{ database_name }}"
+export PRIVX_DATABASE_USERNAME="{{ database_username }}"
+export PRIVX_DATABASE_PASSWORD="{{ database_password }}"
+export PRIVX_POSTGRES_ADDRESS="{{ postgres_address }}"
+export PRIVX_POSTGRES_PORT="{{ database_port }}"
+export DB_EXTERNAL_CREATE_PSQL_USER=false
+export DB_EXTERNAL_CREATE_PSQL_DATABASE=false
+export PRIVX_DATABASE_SSLMODE="{{ database_sslmode }}"
+export PRIVX_DATABASE_ADDITIONAL_PARAMS="{{ database_additional_params }}"
+export PRIVX_NOTIFICATION_BACKEND=db
+export PRIVX_KEYVAULT_PKCS11_ENABLE=0
+export PRIVX_NTP_SERVER="pool.ntp.org"
+/opt/privx/scripts/postinstall.sh

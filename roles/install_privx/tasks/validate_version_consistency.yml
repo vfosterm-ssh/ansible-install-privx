@@ -1,0 +1,69 @@
+---
+# Validate PrivX version consistency across nodes
+
+- name: Check if PrivX is already installed on primary node
+  ansible.builtin.command:
+    cmd: rpm -q PrivX
+  register: primary_privx_version
+  failed_when: false
+  changed_when: false
+  delegate_to: "{{ groups['privx_primary'][0] }}"
+  run_once: true
+
+- name: Extract installed PrivX version from primary node
+  ansible.builtin.set_fact:
+    installed_privx_version: "{{ primary_privx_version.stdout.split('-')[1] if primary_privx_version.rc == 0 else '' }}"
+  run_once: true
+
+- name: Display version consistency check
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                        PRIVX VERSION CONSISTENCY CHECK                        "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "• Primary Node: {{ groups['privx_primary'][0] }}"
+      - "• Installed Version: {{ installed_privx_version if installed_privx_version else 'Not installed' }}"
+      - "• Requested Version: {{ privx_version if privx_version is defined else 'Latest' }}"
+      - ""
+  run_once: true
+
+- name: Fail if version mismatch detected
+  ansible.builtin.fail:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                           VERSION MISMATCH ERROR                              "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "❌ Version mismatch detected!"
+      - ""
+      - "• Installed PrivX Version: {{ installed_privx_version }}"
+      - "• Requested Version: {{ privx_version }}"
+      - ""
+      - "When adding nodes to an existing PrivX deployment, you must use the same"
+      - "version as already installed. Please use one of the following options:"
+      - ""
+      - "1. Install with matching version:"
+      - "   ansible-playbook -i inventory deploy_privx.yml -e privx_version={{ installed_privx_version }}"
+      - ""
+      - "2. Install without specifying version (uses latest):"
+      - "   ansible-playbook -i inventory deploy_privx.yml"
+      - ""
+      - "3. Upgrade entire cluster to new version (advanced):"
+      - "   Please refer to PrivX upgrade documentation"
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"
+  when:
+    - primary_privx_version.rc == 0
+    - privx_version is defined
+    - installed_privx_version != privx_version
+  run_once: true
+
+- name: Display version consistency success
+  ansible.builtin.debug:
+    msg: "✓ Version consistency check passed - proceeding with installation"
+  when:
+    - primary_privx_version.rc == 0
+    - privx_version is defined
+    - installed_privx_version == privx_version
+  run_once: true

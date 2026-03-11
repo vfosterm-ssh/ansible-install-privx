@@ -1,0 +1,94 @@
+---
+# PrivX Configuration Role - Main Tasks
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - database_password is defined
+      - superuser_password is defined
+    fail_msg: |
+      REQUIRED VARIABLES MISSING
+
+      The following variables must be provided:
+        • database_password: Password for database user
+        • superuser_password: Password for PrivX superuser account
+
+    success_msg: "All required variables are provided. Proceeding with PrivX configuration."
+
+- name: Check if PrivX is installed
+  ansible.builtin.command:
+    cmd: rpm -q PrivX
+  register: privx_installed
+  failed_when: false
+  changed_when: false
+
+- name: Verify PrivX installation
+  ansible.builtin.assert:
+    that:
+      - privx_installed.rc == 0
+    fail_msg: |
+      PrivX is not installed on this node.
+      Please run the installation playbook first:
+        ansible-playbook -i inventory install_privx.yml
+    success_msg: "PrivX installation verified: {{ privx_installed.stdout }}"
+
+- name: Check if keyvault already exists on primary node
+  ansible.builtin.stat:
+    path: /opt/privx/keyvault
+  register: global_keyvault_check
+
+- name: Set keyvault status fact
+  ansible.builtin.set_fact:
+    keyvault_already_exists: "{{ global_keyvault_check.stat.exists }}"
+
+- name: Display keyvault already exists message
+  ansible.builtin.debug:
+    msg: "PrivX keyvault already exists on {{ inventory_hostname }} - configuration tasks will be skipped"
+  when: keyvault_already_exists
+
+- name: Generate PrivX configuration script using template
+  ansible.builtin.template:
+    src: poc.j2
+    dest: "{{ CONFIGURATION_SCRIPT }}"
+    mode: '0700'
+  when: not keyvault_already_exists
+
+- name: Display installation log location
+  ansible.builtin.debug:
+    msg:
+      - "Troubleshooting:"
+      - "==============="
+      - "If you encounter issues during the Execute PrivX configuration script"
+      - "Consult the installation logs located at /var/logs/privx-install.log"
+  when: not keyvault_already_exists
+
+- name: Execute PrivX configuration script
+  ansible.builtin.command: "{{ CONFIGURATION_SCRIPT }}"
+  register: config_result
+  timeout: 600
+  when: not keyvault_already_exists
+
+- name: Display configuration script output
+  ansible.builtin.debug:
+    var: config_result.stdout_lines
+    verbosity: 0
+  when:
+    - show_script_output | default(false)
+    - config_result.stdout_lines is defined
+    - not keyvault_already_exists
+
+- name: Delete PrivX configuration script
+  ansible.builtin.file:
+    path: "{{ CONFIGURATION_SCRIPT }}"
+    state: absent
+  when: not keyvault_already_exists
+
+- name: Verify PrivX service status on primary nodes
+  ansible.builtin.systemd:
+    name: privx
+    state: started
+    enabled: true
+  register: service_status
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when: not keyvault_already_exists

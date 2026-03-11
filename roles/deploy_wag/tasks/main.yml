@@ -1,0 +1,55 @@
+---
+# PrivX Web Access Gateway (WAG) Installation Role - Main Tasks
+
+- name: Check if PrivX WAG components are already installed globally
+  ansible.builtin.shell:
+    cmd: rpm -qa | grep -E "^PrivX-(Carrier|Web-Proxy)"
+  register: global_wag_check
+  failed_when: false
+  changed_when: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags: status_check
+
+- name: Set PrivX WAG installation status fact
+  ansible.builtin.set_fact:
+    wag_already_installed: "{{ global_wag_check.rc == 0 and global_wag_check.stdout != '' }}"
+  tags: status_check
+
+- name: Display PrivX WAG already installed message
+  ansible.builtin.debug:
+    msg: "PrivX WAG component is already installed on {{ inventory_hostname }} ({{ global_wag_check.stdout }}) - Installation tasks skipped"
+  when: wag_already_installed
+  tags: status_check
+
+- name: Include version consistency validation
+  ansible.builtin.include_tasks: validate_version_consistency.yml
+  when: not wag_already_installed
+
+- name: Include pre-installation validation
+  ansible.builtin.include_tasks: validate_prerequisites.yml
+  when: not wag_already_installed
+
+- name: Include repository setup tasks
+  ansible.builtin.include_tasks: setup_repository.yml
+  when: not wag_already_installed
+
+- name: Include carrier installation tasks
+  ansible.builtin.include_tasks: install_carrier.yml
+  when:
+    - not wag_already_installed
+    - inventory_hostname in groups['privxcarrier']
+
+- name: Include web proxy installation tasks
+  ansible.builtin.include_tasks: install_webproxy.yml
+  when:
+    - not wag_already_installed
+    - inventory_hostname in groups['privxwebproxy']
+
+- name: Include configuration deployment tasks
+  ansible.builtin.include_tasks: deploy_configuration.yml
+  when: not wag_already_installed
+
+- name: Include post-installation tasks
+  ansible.builtin.include_tasks: post_installation.yml
+  when: not wag_already_installed

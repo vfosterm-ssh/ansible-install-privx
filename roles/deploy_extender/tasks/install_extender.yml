@@ -1,0 +1,40 @@
+---
+# Install PrivX Extender package
+
+- name: Determine extender package name
+  ansible.builtin.set_fact:
+    extender_package_name: >-
+      {%- if ansible_facts['distribution'] in ['RedHat', 'Rocky'] and ansible_facts['distribution_major_version'] == '9' and extender_fips_enabled | bool -%}
+      {{ extender_fips_package_name }}{%- else -%}
+      {{ extender_base_package_name }}{%- endif -%}
+
+- name: Display package information
+  ansible.builtin.debug:
+    msg: "Installing {{ extender_package_name }} on {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}"
+
+- name: Install PrivX Extender package (dnf)
+  ansible.builtin.dnf:
+    name: "{{ extender_package_name }}"
+    state: present
+  register: extender_install_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+
+- name: Display installation result
+  ansible.builtin.debug:
+    msg: "PrivX Extender successfully installed on {{ inventory_hostname }}"
+  when: extender_install_result.changed
+
+- name: Verify PrivX Extender installation
+  ansible.builtin.command:
+    cmd: rpm -q {{ extender_package_name }}
+  register: extender_verify
+  changed_when: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display installed PrivX Extender version
+  ansible.builtin.debug:
+    msg: "PrivX Extender installed: {{ extender_verify.stdout }}"

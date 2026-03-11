@@ -1,0 +1,107 @@
+---
+# Validate prerequisites for PrivX WAG installation
+
+- name: Detect OS distribution and version
+  ansible.builtin.setup:
+    filter: ansible_distribution*
+  when: ansible_facts['distribution'] is not defined
+
+- name: Display detected OS information
+  ansible.builtin.debug:
+    msg: "✓ Detected OS: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}"
+
+- name: Validate supported operating system
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+      - (ansible_facts['distribution'] in ['RedHat', 'Rocky'] and ansible_facts['distribution_major_version'] in ['8', '9'])
+    fail_msg: |
+      UNSUPPORTED OPERATING SYSTEM
+
+      PrivX Web Access Gateway is only supported on:
+      • Red Hat Enterprise Linux 8 or 9
+      • Rocky Linux 8 or 9
+
+      Current system: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}
+
+- name: Determine WAG component types
+  ansible.builtin.set_fact:
+    is_carrier: "{{ inventory_hostname in groups['privxcarrier'] }}"
+    is_webproxy: "{{ inventory_hostname in groups['privxwebproxy'] }}"
+
+- name: Validate WAG component assignment
+  ansible.builtin.assert:
+    that:
+      - is_carrier or is_webproxy
+    fail_msg: |
+      WAG COMPONENT ASSIGNMENT ERROR
+
+      Host {{ inventory_hostname }} is not assigned to either:
+      • [privxcarrier] group for Carrier installation
+      • [privxwebproxy] group for Web Proxy installation
+
+      Please assign this host to the appropriate inventory group.
+
+    success_msg: "WAG components: {{ 'Carrier' if is_carrier else '' }}{{ ' and ' if (is_carrier and is_webproxy) else '' }}{{ 'Web Proxy' if is_webproxy else '' }}"
+
+- name: Check for carrier configuration file
+  ansible.builtin.stat:
+    path: "./configuration_files/{{ inventory_hostname }}-carrier-config.toml"
+  register: carrier_config_file
+  delegate_to: localhost
+  become: false
+  when: is_carrier
+
+- name: Check for web proxy configuration file
+  ansible.builtin.stat:
+    path: "./configuration_files/{{ inventory_hostname }}-web-proxy-config.toml"
+  register: webproxy_config_file
+  delegate_to: localhost
+  become: false
+  when: is_webproxy
+
+- name: Validate carrier configuration file exists
+  ansible.builtin.assert:
+    that:
+      - carrier_config_file.stat.exists
+    fail_msg: |
+      CARRIER CONFIGURATION FILE NOT FOUND
+
+      Configuration file not found: ./configuration_files/{{ inventory_hostname }}-carrier-config.toml
+
+      To obtain the configuration file:
+      1. Access PrivX web interface
+      2. Go to Settings → Deployment → Deploy PrivX web-access gateways
+      3. Create or download a web-access-gateway configuration
+      4. Download Carrier Config
+      5. Save it as: ./configuration_files/{{ inventory_hostname }}-carrier-config.toml
+
+    success_msg: "Carrier configuration file found: {{ inventory_hostname }}-carrier-config.toml"
+  when: is_carrier
+
+- name: Validate web proxy configuration file exists
+  ansible.builtin.assert:
+    that:
+      - webproxy_config_file.stat.exists
+    fail_msg: |
+      WEB PROXY CONFIGURATION FILE NOT FOUND
+
+      Configuration file not found: ./configuration_files/{{ inventory_hostname }}-web-proxy-config.toml
+
+      To obtain the configuration file:
+      1. Access PrivX web interface
+      2. Go to Settings → Deployment → Deploy PrivX web-access gateways
+      3. Create or download a web-access-gateway configuration
+      4. Download Proxy Config
+      5. Save it as: ./configuration_files/{{ inventory_hostname }}-web-proxy-config.toml
+
+    success_msg: "Web Proxy configuration file found: {{ inventory_hostname }}-web-proxy-config.toml"
+  when: is_webproxy
+
+- name: Display WAG component information
+  ansible.builtin.debug:
+    msg: >-
+      ✓ WAG Components on {{ inventory_hostname }}
+      ({{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}):
+      {{ 'Carrier' if is_carrier else '' }}{{ ' and ' if (is_carrier and is_webproxy) else '' }}{{ 'Web Proxy' if is_webproxy else '' }}
+      - Config: {{ 'Found' if ((is_carrier and carrier_config_file.stat.exists) or (is_webproxy and webproxy_config_file.stat.exists)) else 'Missing' }}

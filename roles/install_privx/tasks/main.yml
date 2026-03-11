@@ -1,0 +1,46 @@
+---
+# PrivX Installation Role - Main Tasks
+
+- name: Check if PrivX is already installed globally
+  ansible.builtin.command:
+    cmd: rpm -q PrivX
+  register: global_privx_check
+  failed_when: false
+  changed_when: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  tags: status_check
+
+- name: Set PrivX installation status fact
+  ansible.builtin.set_fact:
+    privx_already_installed: "{{ global_privx_check.rc == 0 }}"
+  tags: status_check
+
+- name: Display PrivX already installed message
+  ansible.builtin.debug:
+    msg: "PrivX is already installed on {{ inventory_hostname }} ({{ global_privx_check.stdout }}) - Installation tasks skipped"
+  when: privx_already_installed
+  tags: status_check
+
+- name: Include version consistency validation
+  ansible.builtin.include_tasks: validate_version_consistency.yml
+  when:
+    - not privx_already_installed
+    - groups['privx_primary'] is defined
+    - groups['privx_primary'] | length > 0
+
+- name: Include repository setup and prerequisites
+  ansible.builtin.include_tasks: repository_setup.yml
+  when: not privx_already_installed
+
+- name: Include primary node installation
+  ansible.builtin.include_tasks: install_primary.yml
+  when:
+    - not privx_already_installed
+    - inventory_hostname in groups['privx_primary']
+
+- name: Include secondary nodes installation
+  ansible.builtin.include_tasks: install_secondary.yml
+  when:
+    - not privx_already_installed
+    - inventory_hostname in groups['privx_additional_nodes']

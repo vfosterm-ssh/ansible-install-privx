@@ -1,0 +1,43 @@
+---
+# Verify PrivX installation on additional nodes
+
+- name: Check if PrivX is installed on additional nodes
+  ansible.builtin.command:
+    cmd: rpm -q PrivX
+  register: privx_installed
+  failed_when: false
+  changed_when: false
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Verify PrivX installation on additional nodes
+  ansible.builtin.assert:
+    that:
+      - privx_installed.rc == 0
+    fail_msg: |
+      PrivX is not installed on {{ inventory_hostname }}.
+      Please run the installation playbook first:
+        ansible-playbook -i inventory install_privx.yml
+    success_msg: "PrivX installation verified on {{ inventory_hostname }}: {{ privx_installed.stdout }}"
+
+- name: Check if keyvault already exists on additional nodes
+  ansible.builtin.stat:
+    path: /opt/privx/keyvault
+  register: keyvault_exists
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Skip configuration if keyvault exists
+  ansible.builtin.debug:
+    msg:
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - "                     CONFIGURATION SKIPPED                                      "
+      - "════════════════════════════════════════════════════════════════════════════════"
+      - ""
+      - "✓ PrivX keyvault already exists on {{ inventory_hostname }} - skipping configuration"
+      - ""
+      - "ℹ This node appears to be already configured. If you need to reconfigure,"
+      - "ℹ please remove the keyvault directory and run the configuration again."
+      - ""
+      - "════════════════════════════════════════════════════════════════════════════════"
+  when: keyvault_exists.stat.exists

@@ -1,0 +1,15 @@
+---
+# PrivX Extender Deployment Playbook
+# This playbook handles PrivX Extender installation and configuration
+
+# =============================================================================
+# EXTENDER DEPLOYMENT PHASE
+# =============================================================================
+
+- name: PrivX Extender Deployment
+  hosts: privxextender
+  gather_facts: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  roles:
+    - deploy_extender

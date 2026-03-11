@@ -1,0 +1,75 @@
+---
+- name: Run PrivX backup script
+  ansible.builtin.command:
+    cmd: /opt/privx/scripts/backup.sh
+  register: backup_result
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display backup script output
+  ansible.builtin.debug:
+    var: backup_result.stdout_lines
+    verbosity: 0
+  when:
+    - show_script_output | default(false)
+    - backup_result.stdout_lines is defined
+
+- name: Extract backup directory path from script output
+  ansible.builtin.set_fact:
+    backup_directory_path: "{{ backup_result.stdout_lines | select('match', '.*Backup done, see (/var/backups/privx/.+)/backup.log.*') | first | regex_replace('.*Backup done, see (/var/backups/privx/.+)/backup.log.*', '\\1') }}"
+  when: backup_result.stdout_lines is defined
+
+- name: Display extracted backup directory
+  ansible.builtin.debug:
+    msg: "Backup directory extracted: {{ backup_directory_path }}"
+  when: backup_directory_path is defined
+
+- name: Verify backup directory exists
+  ansible.builtin.stat:
+    path: "{{ backup_directory_path }}"
+  register: backup_dir_stat
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when: backup_directory_path is defined
+
+- name: Verify backup directory and log file
+  ansible.builtin.assert:
+    that:
+      - backup_directory_path is defined
+      - backup_dir_stat.stat.exists
+      - backup_dir_stat.stat.isdir
+    fail_msg: |
+      Backup directory not found or invalid: {{ backup_directory_path | default('undefined') }}
+      Please check if the backup script executed successfully.
+    success_msg: "Backup directory verified: {{ backup_directory_path }}"
+
+- name: Get backup directory name
+  ansible.builtin.set_fact:
+    backup_dir_name: "{{ backup_directory_path | basename }}"
+
+- name: Create compressed backup archive
+  ansible.builtin.archive:
+    path: "{{ backup_directory_path }}"
+    dest: "/var/backups/privx/{{ backup_dir_name }}.tar.gz"
+    format: gz
+    mode: '0644'
+  register: backup_archive
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Display backup archive information
+  ansible.builtin.debug:
+    msg: "Backup archive created: {{ backup_archive.dest }} ({{ backup_archive.size | default('Unknown') }} bytes)"
+
+- name: Fetch backup archive to local machine
+  ansible.builtin.fetch:
+    src: "{{ backup_archive.dest }}"
+    dest: "./backups/{{ inventory_hostname }}-{{ backup_dir_name }}.tar.gz"
+    flat: true
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Create local backups directory info
+  ansible.builtin.debug:
+    msg: "Backup fetched to local path: ./backups/{{ inventory_hostname }}-{{ backup_dir_name }}.tar.gz"
+  delegate_to: localhost

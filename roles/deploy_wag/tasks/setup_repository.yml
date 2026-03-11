@@ -1,0 +1,37 @@
+---
+# Setup repository for PrivX WAG installation
+
+- name: Import SSH.COM GPG key
+  ansible.builtin.rpm_key:
+    key: https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc
+    state: present
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+# Red Hat/Rocky Linux 8 repository setup
+- name: Add SSH.COM repository for RHEL/Rocky 8
+  ansible.builtin.get_url:
+    url: https://product-repository.ssh.com/rhel8/ssh-products.repo
+    dest: /etc/yum.repos.d/ssh-products.repo
+    mode: '0644'
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '8'
+
+# Red Hat/Rocky Linux 9 repository setup
+- name: Add SSH.COM repository for RHEL/Rocky 9
+  ansible.builtin.get_url:
+    url: https://product-repository.ssh.com/rhel9/ssh-products.repo
+    dest: /etc/yum.repos.d/ssh-products.repo
+    mode: '0644'
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '9'
+
+- name: Display repository setup completion
+  ansible.builtin.debug:
+    msg: "✓ Repository setup completed for {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}"
