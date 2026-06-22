@@ -61,6 +61,32 @@
   ansible.builtin.debug:
     msg: "Backup archive created: {{ backup_archive.dest }} ({{ backup_archive.size | default('Unknown') }} bytes)"
 
+- name: Ensure local backups directory exists
+  ansible.builtin.file:
+    path: "./backups"
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+  become: false
+
+- name: Find stale local backup archives for this primary node
+  ansible.builtin.find:
+    paths: "./backups"
+    patterns: "{{ inventory_hostname }}-*.tar.gz"
+    file_type: file
+  register: stale_local_backups
+  delegate_to: localhost
+  become: false
+
+- name: Remove stale local backup archives for this primary node
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ stale_local_backups.files }}"
+  when: stale_local_backups.matched | default(0) | int > 0
+  delegate_to: localhost
+  become: false
+
 - name: Fetch backup archive to local machine
   ansible.builtin.fetch:
     src: "{{ backup_archive.dest }}"
