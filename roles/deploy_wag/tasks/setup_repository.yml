@@ -1,34 +1,84 @@
 ---
 # Setup repository for PrivX WAG installation
 
+- name: Validate SSH product repository overrides
+  ansible.builtin.assert:
+    that:
+      - not (custom_ssh_product_repo_url | length > 0 and custom_ssh_product_repo_file | length > 0)
+    fail_msg: >
+      Define only one of custom_ssh_product_repo_url or custom_ssh_product_repo_file.
+      Both were provided.
+
+- name: Set SSH product repository URL for WAG
+  ansible.builtin.set_fact:
+    ssh_product_repo_url: "{{ custom_ssh_product_repo_url if custom_ssh_product_repo_url | length > 0 else ('https://product-repository.ssh.com/rhel8/ssh-products.repo' if ansible_facts['distribution_major_version'] == '8' else 'https://product-repository.ssh.com/rhel9/ssh-products.repo') }}"
+  when: ansible_facts['distribution'] in ['RedHat', 'Rocky']
+
+- name: Display SSH product repository management status for WAG
+  ansible.builtin.debug:
+    msg: >-
+      SSH product repository tasks {{ 'enabled' if (manage_ssh_product_repo | bool) else 'skipped' }}
+      on {{ inventory_hostname }}.
+
 - name: Import SSH.COM GPG key
   ansible.builtin.rpm_key:
-    key: https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc
+    key: "{{ ssh_product_repo_gpg_key_url }}"
     state: present
   remote_user: "{{ REMOTE_USER | default('root') }}"
   become: "{{ BECOME | default('no') }}"
+  when: manage_ssh_product_repo | bool
 
 # Red Hat/Rocky Linux 8 repository setup
-- name: Add SSH.COM repository for RHEL/Rocky 8
-  ansible.builtin.get_url:
-    url: https://product-repository.ssh.com/rhel8/ssh-products.repo
+- name: Add SSH.COM repository from local file for RHEL/Rocky 8
+  ansible.builtin.copy:
+    src: "{{ custom_ssh_product_repo_file }}"
     dest: /etc/yum.repos.d/ssh-products.repo
     mode: '0644'
   remote_user: "{{ REMOTE_USER | default('root') }}"
   become: "{{ BECOME | default('no') }}"
   when:
+    - manage_ssh_product_repo | bool
+    - custom_ssh_product_repo_file | length > 0
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '8'
+
+- name: Add SSH.COM repository from URL for RHEL/Rocky 8
+  ansible.builtin.get_url:
+    url: "{{ ssh_product_repo_url }}"
+    dest: /etc/yum.repos.d/ssh-products.repo
+    mode: '0644'
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - manage_ssh_product_repo | bool
+    - custom_ssh_product_repo_file | length == 0
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
     - ansible_facts['distribution_major_version'] == '8'
 
 # Red Hat/Rocky Linux 9 repository setup
-- name: Add SSH.COM repository for RHEL/Rocky 9
-  ansible.builtin.get_url:
-    url: https://product-repository.ssh.com/rhel9/ssh-products.repo
+- name: Add SSH.COM repository from local file for RHEL/Rocky 9
+  ansible.builtin.copy:
+    src: "{{ custom_ssh_product_repo_file }}"
     dest: /etc/yum.repos.d/ssh-products.repo
     mode: '0644'
   remote_user: "{{ REMOTE_USER | default('root') }}"
   become: "{{ BECOME | default('no') }}"
   when:
+    - manage_ssh_product_repo | bool
+    - custom_ssh_product_repo_file | length > 0
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - ansible_facts['distribution_major_version'] == '9'
+
+- name: Add SSH.COM repository from URL for RHEL/Rocky 9
+  ansible.builtin.get_url:
+    url: "{{ ssh_product_repo_url }}"
+    dest: /etc/yum.repos.d/ssh-products.repo
+    mode: '0644'
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+  when:
+    - manage_ssh_product_repo | bool
+    - custom_ssh_product_repo_file | length == 0
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
     - ansible_facts['distribution_major_version'] == '9'
 

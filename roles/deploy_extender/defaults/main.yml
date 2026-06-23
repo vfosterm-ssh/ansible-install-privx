@@ -11,6 +11,13 @@ extender_fips_enabled: false
 extender_base_package_name: "{{ 'PrivX-Extender-' + privx_version if privx_version is defined else 'PrivX-Extender' }}"
 extender_fips_package_name: "{{ 'PrivX-Extender-FIPS-' + privx_version if privx_version is defined else 'PrivX-Extender-FIPS' }}"
 
+# SSH.COM product repository settings
+# These can be overridden via inventory or -e.
+manage_ssh_product_repo: true
+custom_ssh_product_repo_url: ""
+custom_ssh_product_repo_file: ""
+ssh_product_repo_gpg_key_url: "https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc"
+
 # Ansible connection settings
 REMOTE_USER: "{{ REMOTE_USER | default('rocky') }}"
 BECOME: "{{ BECOME | default('no') }}"

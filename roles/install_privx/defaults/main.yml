@@ -9,3 +9,10 @@ BECOME: "{{ BECOME | default('no') }}"
 # If privx_version is defined, install specific version (e.g., "42.2")
 # If not defined, install latest available version
 privx_package_name: "{{ 'PrivX-' + privx_version if privx_version is defined else 'PrivX' }}"
+
+# SSH.COM product repository settings
+# These can be overridden via inventory or -e.
+manage_ssh_product_repo: true
+custom_ssh_product_repo_url: ""
+custom_ssh_product_repo_file: ""
+ssh_product_repo_gpg_key_url: "https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc"
