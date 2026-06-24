@@ -84,6 +84,35 @@ ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
 
 You can customize the default values directly in the inventory file, or override them via command line using `-e` parameters.
 
+## Repository Control
+
+The `install_privx` role can skip managing the SSH product repository entirely, or use a custom repository definition. Configure these like the other playbook variables in `inventory/hosts.ini` or override them with `-e`.
+
+Variables:
+
+- `manage_ssh_product_repo=true`
+- `custom_ssh_product_repo_url=""`
+- `custom_ssh_product_repo_file=""`
+- `ssh_product_repo_gpg_key_url="https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc"`
+
+Examples:
+
+```bash
+ansible-playbook -i inventory deploy_privx.yml --tags install \
+  -e manage_ssh_product_repo=false
+```
+
+```bash
+ansible-playbook -i inventory deploy_privx.yml --tags install \
+  -e custom_ssh_product_repo_url=https://repo.example.com/ssh-products.repo \
+  -e ssh_product_repo_gpg_key_url=https://repo.example.com/RPM-GPG-KEY-ssh
+```
+
+```bash
+ansible-playbook -i inventory deploy_privx.yml --tags install \
+  -e custom_ssh_product_repo_file=/absolute/path/to/ssh-products.repo
+```
+
 ## PrivX Core Deployment Options
 
 ### Unified Deployment (Main Approach)
