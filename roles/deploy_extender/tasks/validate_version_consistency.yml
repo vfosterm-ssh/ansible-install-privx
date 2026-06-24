@@ -3,7 +3,7 @@
 
 - name: Check if PrivX is installed on primary node
   ansible.builtin.command:
-    cmd: rpm -q PrivX
+    cmd: rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX
   register: primary_privx_version
   failed_when: false
   changed_when: false
@@ -12,7 +12,7 @@
 
 - name: Check if any PrivX Extender is already installed
   ansible.builtin.shell:
-    cmd: rpm -qa | grep -E "^PrivX-Extender"
+    cmd: rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX-Extender || rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX-Extender-FIPS
   register: existing_extender_check
   failed_when: false
   changed_when: false
@@ -21,8 +21,11 @@
 
 - name: Extract installed versions
   ansible.builtin.set_fact:
-    installed_privx_version: "{{ primary_privx_version.stdout.split('-')[1] if primary_privx_version.rc == 0 else '' }}"
-    installed_extender_version: "{{ existing_extender_check.stdout.split('-')[2] if existing_extender_check.rc == 0 and existing_extender_check.stdout else '' }}"
+    installed_privx_evr: "{{ primary_privx_version.stdout | trim if primary_privx_version.rc == 0 else '' }}"
+    installed_privx_version: "{{ (primary_privx_version.stdout | trim).split('-')[0] if primary_privx_version.rc == 0 else '' }}"
+    installed_extender_evr: "{{ existing_extender_check.stdout | trim if existing_extender_check.rc == 0 and existing_extender_check.stdout else '' }}"
+    installed_extender_version: "{{ (existing_extender_check.stdout | trim).split('-')[0] if existing_extender_check.rc == 0 and existing_extender_check.stdout else '' }}"
+    requested_privx_is_exact: "{{ privx_version is defined and '-' in privx_version }}"
   run_once: true
 
 - name: Display extender version consistency check
@@ -32,8 +35,8 @@
       - "                      EXTENDER VERSION CONSISTENCY CHECK                       "
       - "════════════════════════════════════════════════════════════════════════════════"
       - ""
-      - "• PrivX Core Version: {{ installed_privx_version if installed_privx_version else 'Not found' }}"
-      - "• Installed Extender Version: {{ installed_extender_version if installed_extender_version else 'None installed' }}"
+      - "• PrivX Core Version: {{ installed_privx_evr if installed_privx_evr else 'Not found' }}"
+      - "• Installed Extender Version: {{ installed_extender_evr if installed_extender_evr else 'None installed' }}"
       - "• Requested Version: {{ privx_version if privx_version is defined else 'Latest' }}"
       - ""
   run_once: true
@@ -65,7 +68,7 @@
       - ""
       - "❌ Extender version mismatch with PrivX core!"
       - ""
-      - "• PrivX Core Version: {{ installed_privx_version }}"
+      - "• PrivX Core Version: {{ installed_privx_evr }}"
       - "• Requested Extender Version: {{ privx_version }}"
       - ""
       - "Extender version must match PrivX core version. Please use:"
@@ -76,7 +79,9 @@
   when:
     - primary_privx_version.rc == 0
     - privx_version is defined
-    - installed_privx_version != privx_version
+    - >
+      (requested_privx_is_exact and installed_privx_evr != privx_version) or
+      ((not requested_privx_is_exact) and installed_privx_version != privx_version)
   run_once: true
 
 - name: Fail if version mismatch with existing extenders
@@ -88,7 +93,7 @@
       - ""
       - "❌ Version mismatch with existing extenders!"
       - ""
-      - "• Installed Extender Version: {{ installed_extender_version }}"
+      - "• Installed Extender Version: {{ installed_extender_evr }}"
       - "• Requested Version: {{ privx_version }}"
       - ""
       - "When adding extenders to an existing deployment, all extenders must use"
@@ -100,7 +105,9 @@
   when:
     - existing_extender_check.rc == 0
     - privx_version is defined
-    - installed_extender_version != privx_version
+    - >
+      (requested_privx_is_exact and installed_extender_evr != privx_version) or
+      ((not requested_privx_is_exact) and installed_extender_version != privx_version)
   run_once: true
 
 - name: Display extender version consistency success
@@ -109,6 +116,7 @@
   when:
     - primary_privx_version.rc == 0
     - (not privx_version is defined) or
-      (privx_version is defined and installed_privx_version == privx_version) or
+      (requested_privx_is_exact and installed_privx_evr == privx_version) or
+      ((not requested_privx_is_exact) and installed_privx_version == privx_version) or
       (existing_extender_check.rc != 0)
   run_once: true

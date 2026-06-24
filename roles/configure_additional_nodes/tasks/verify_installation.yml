@@ -3,7 +3,7 @@
 
 - name: Check if PrivX is installed on additional nodes
   ansible.builtin.command:
-    cmd: rpm -q PrivX
+    cmd: rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX
   register: privx_installed
   failed_when: false
   changed_when: false
@@ -19,6 +19,28 @@
       Please run the installation playbook first:
         ansible-playbook -i inventory install_privx.yml
     success_msg: "PrivX installation verified on {{ inventory_hostname }}: {{ privx_installed.stdout }}"
+
+- name: Check installed PrivX version on primary node
+  ansible.builtin.command:
+    cmd: rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX
+  register: primary_privx_installed
+  failed_when: false
+  changed_when: false
+  delegate_to: "{{ groups['privx_primary'][0] }}"
+  remote_user: "{{ REMOTE_USER | default('root') }}"
+  become: "{{ BECOME | default('no') }}"
+
+- name: Verify additional node version matches primary
+  ansible.builtin.assert:
+    that:
+      - primary_privx_installed.rc == 0
+      - privx_installed.stdout | trim == primary_privx_installed.stdout | trim
+    fail_msg: |
+      PrivX version mismatch detected before configuring {{ inventory_hostname }}.
+      Primary node ({{ groups['privx_primary'][0] }}) version: {{ primary_privx_installed.stdout | trim if primary_privx_installed.rc == 0 else 'Not installed' }}
+      Additional node ({{ inventory_hostname }}) version: {{ privx_installed.stdout | trim }}
+      Additional nodes must match the primary node version before restore/configuration.
+    success_msg: "PrivX version verified on {{ inventory_hostname }}: {{ privx_installed.stdout | trim }}"
 
 - name: Check if keyvault already exists on additional nodes
   ansible.builtin.stat:

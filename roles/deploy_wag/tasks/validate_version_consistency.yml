@@ -3,7 +3,7 @@
 
 - name: Check if PrivX is installed on primary node
   ansible.builtin.command:
-    cmd: rpm -q PrivX
+    cmd: rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX
   register: primary_privx_version
   failed_when: false
   changed_when: false
@@ -11,8 +11,8 @@
   run_once: true
 
 - name: Check if any PrivX Carrier is already installed
-  ansible.builtin.shell:
-    cmd: rpm -qa | grep "PrivX-Carrier"
+  ansible.builtin.command:
+    cmd: rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX-Carrier
   register: existing_carrier_check
   failed_when: false
   changed_when: false
@@ -20,8 +20,8 @@
   run_once: true
 
 - name: Check if any PrivX Web Proxy is already installed
-  ansible.builtin.shell:
-    cmd: rpm -qa | grep "PrivX-Web-Proxy"
+  ansible.builtin.command:
+    cmd: rpm -q --qf '%{VERSION}-%{RELEASE}\n' PrivX-Web-Proxy
   register: existing_webproxy_check
   failed_when: false
   changed_when: false
@@ -30,9 +30,13 @@
 
 - name: Extract installed versions
   ansible.builtin.set_fact:
-    installed_privx_version: "{{ primary_privx_version.stdout.split('-')[1] if primary_privx_version.rc == 0 else '' }}"
-    installed_carrier_version: "{{ existing_carrier_check.stdout.split('-')[2] if existing_carrier_check.rc == 0 and existing_carrier_check.stdout else '' }}"
-    installed_webproxy_version: "{{ existing_webproxy_check.stdout.split('-')[3] if existing_webproxy_check.rc == 0 and existing_webproxy_check.stdout else '' }}"
+    installed_privx_evr: "{{ primary_privx_version.stdout | trim if primary_privx_version.rc == 0 else '' }}"
+    installed_privx_version: "{{ (primary_privx_version.stdout | trim).split('-')[0] if primary_privx_version.rc == 0 else '' }}"
+    installed_carrier_evr: "{{ existing_carrier_check.stdout | trim if existing_carrier_check.rc == 0 and existing_carrier_check.stdout else '' }}"
+    installed_carrier_version: "{{ (existing_carrier_check.stdout | trim).split('-')[0] if existing_carrier_check.rc == 0 and existing_carrier_check.stdout else '' }}"
+    installed_webproxy_evr: "{{ existing_webproxy_check.stdout | trim if existing_webproxy_check.rc == 0 and existing_webproxy_check.stdout else '' }}"
+    installed_webproxy_version: "{{ (existing_webproxy_check.stdout | trim).split('-')[0] if existing_webproxy_check.rc == 0 and existing_webproxy_check.stdout else '' }}"
+    requested_privx_is_exact: "{{ privx_version is defined and '-' in privx_version }}"
   run_once: true
 
 - name: Display WAG version consistency check
@@ -42,9 +46,9 @@
       - "                        WAG VERSION CONSISTENCY CHECK                          "
       - "════════════════════════════════════════════════════════════════════════════════"
       - ""
-      - "• PrivX Core Version: {{ installed_privx_version if installed_privx_version else 'Not found' }}"
-      - "• Installed Carrier Version: {{ installed_carrier_version if installed_carrier_version else 'None installed' }}"
-      - "• Installed Web Proxy Version: {{ installed_webproxy_version if installed_webproxy_version else 'None installed' }}"
+      - "• PrivX Core Version: {{ installed_privx_evr if installed_privx_evr else 'Not found' }}"
+      - "• Installed Carrier Version: {{ installed_carrier_evr if installed_carrier_evr else 'None installed' }}"
+      - "• Installed Web Proxy Version: {{ installed_webproxy_evr if installed_webproxy_evr else 'None installed' }}"
       - "• Requested Version: {{ privx_version if privx_version is defined else 'Latest' }}"
       - ""
   run_once: true
@@ -76,7 +80,7 @@
       - ""
       - "❌ WAG version mismatch with PrivX core!"
       - ""
-      - "• PrivX Core Version: {{ installed_privx_version }}"
+      - "• PrivX Core Version: {{ installed_privx_evr }}"
       - "• Requested WAG Version: {{ privx_version }}"
       - ""
       - "WAG version must match PrivX core version. Please use:"
@@ -87,7 +91,9 @@
   when:
     - primary_privx_version.rc == 0
     - privx_version is defined
-    - installed_privx_version != privx_version
+    - >
+      (requested_privx_is_exact and installed_privx_evr != privx_version) or
+      ((not requested_privx_is_exact) and installed_privx_version != privx_version)
   run_once: true
 
 - name: Fail if version mismatch with existing Carrier
@@ -99,7 +105,7 @@
       - ""
       - "❌ Version mismatch with existing Carrier components!"
       - ""
-      - "• Installed Carrier Version: {{ installed_carrier_version }}"
+      - "• Installed Carrier Version: {{ installed_carrier_evr }}"
       - "• Requested Version: {{ privx_version }}"
       - ""
       - "When adding WAG components to an existing deployment, all components must use"
@@ -111,7 +117,9 @@
   when:
     - existing_carrier_check.rc == 0
     - privx_version is defined
-    - installed_carrier_version != privx_version
+    - >
+      (requested_privx_is_exact and installed_carrier_evr != privx_version) or
+      ((not requested_privx_is_exact) and installed_carrier_version != privx_version)
   run_once: true
 
 - name: Fail if version mismatch with existing Web Proxy
@@ -123,7 +131,7 @@
       - ""
       - "❌ Version mismatch with existing Web Proxy components!"
       - ""
-      - "• Installed Web Proxy Version: {{ installed_webproxy_version }}"
+      - "• Installed Web Proxy Version: {{ installed_webproxy_evr }}"
       - "• Requested Version: {{ privx_version }}"
       - ""
       - "When adding WAG components to an existing deployment, all components must use"
@@ -135,7 +143,9 @@
   when:
     - existing_webproxy_check.rc == 0
     - privx_version is defined
-    - installed_webproxy_version != privx_version
+    - >
+      (requested_privx_is_exact and installed_webproxy_evr != privx_version) or
+      ((not requested_privx_is_exact) and installed_webproxy_version != privx_version)
   run_once: true
 
 - name: Display WAG version consistency success
@@ -144,6 +154,7 @@
   when:
     - primary_privx_version.rc == 0
     - (not privx_version is defined) or
-      (privx_version is defined and installed_privx_version == privx_version) or
+      (requested_privx_is_exact and installed_privx_evr == privx_version) or
+      ((not requested_privx_is_exact) and installed_privx_version == privx_version) or
       (existing_carrier_check.rc != 0 and existing_webproxy_check.rc != 0)
   run_once: true
