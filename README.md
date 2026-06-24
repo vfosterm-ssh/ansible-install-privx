@@ -341,7 +341,7 @@ These variables have default values set in `inventory/hosts.ini` and can be cust
 ### Version Variables
 
 - `privx_version` (optional)  
-  Install specific version of PrivX and components (e.g., "42.2")  
+  Install a specific PrivX and component version. Supports either a version prefix such as `42.2` or an exact package version such as `42.2-57`.  
   If not defined, installs latest available version  
   **Important**: When adding nodes/components to existing deployments, version consistency is automatically validated
 
@@ -397,6 +397,18 @@ ansible-playbook -i inventory deploy_privx.yml \
 ansible-playbook -i inventory deploy_privx.yml \
   --tags full_deployment \
   -e privx_version=42.2 \
+  -e privx_dns_name=privx.example.com \
+  -e database_password=your_password \
+  -e postgres_address=db.example.com \
+  -e superuser_password=your_admin_password
+```
+
+### Complete Deployment with Exact Package Version
+```bash
+# Deploy an exact PrivX package version
+ansible-playbook -i inventory deploy_privx.yml \
+  --tags full_deployment \
+  -e privx_version=42.2-57 \
   -e privx_dns_name=privx.example.com \
   -e database_password=your_password \
   -e postgres_address=db.example.com \

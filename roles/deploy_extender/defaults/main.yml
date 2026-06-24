@@ -6,7 +6,7 @@
 extender_fips_enabled: false
 
 # Extender version settings
-# If privx_version is defined, install specific version (e.g., "42.2")
+# If privx_version is defined, install specific version (e.g., "42.2" or exact package version "42.2-57")
 # If not defined, install latest available version
 extender_base_package_name: "{{ 'PrivX-Extender-' + privx_version if privx_version is defined else 'PrivX-Extender' }}"
 extender_fips_package_name: "{{ 'PrivX-Extender-FIPS-' + privx_version if privx_version is defined else 'PrivX-Extender-FIPS' }}"
