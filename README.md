@@ -86,11 +86,14 @@ You can customize the default values directly in the inventory file, or override
 
 ## Repository Control
 
-The `install_privx` role can skip managing the SSH product repository entirely, or use a custom repository definition. Configure these like the other playbook variables in `inventory/hosts.ini` or override them with `-e`.
+The playbooks can skip managing external repositories and module streams when your hosts already have access to the required packages through internal mirrors or preconfigured repositories. Configure these in `inventory/hosts.ini` or override them with `-e`. If management is disabled and the required package is not available from the host's existing package sources, the package installation will fail normally.
 
 Variables:
 
 - `manage_ssh_product_repo=true`
+- `manage_epel_repo=true`
+- `manage_docker_ce_repo=true`
+- `manage_postgresql_module=true`
 - `custom_ssh_product_repo_url=""`
 - `custom_ssh_product_repo_file=""`
 - `ssh_product_repo_gpg_key_url="https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc"`
@@ -104,13 +107,16 @@ ansible-playbook -i inventory deploy_privx.yml --tags install \
 
 ```bash
 ansible-playbook -i inventory deploy_privx.yml --tags install \
-  -e custom_ssh_product_repo_url=https://repo.example.com/ssh-products.repo \
-  -e ssh_product_repo_gpg_key_url=https://repo.example.com/RPM-GPG-KEY-ssh
+  -e manage_ssh_product_repo=false \
+  -e manage_epel_repo=false \
+  -e manage_postgresql_module=false
 ```
 
 ```bash
-ansible-playbook -i inventory deploy_privx.yml --tags install \
-  -e custom_ssh_product_repo_file=/absolute/path/to/ssh-products.repo
+ansible-playbook -i inventory deploy_wag.yml \
+  -e manage_ssh_product_repo=false \
+  -e manage_epel_repo=false \
+  -e manage_docker_ce_repo=false
 ```
 
 ## PrivX Core Deployment Options

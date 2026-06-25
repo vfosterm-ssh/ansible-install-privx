@@ -6,7 +6,9 @@
     cmd: yum config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
   remote_user: "{{ REMOTE_USER | default('root') }}"
   become: "{{ BECOME | default('no') }}"
-  when: ansible_facts['distribution'] in ['RedHat', 'Rocky']
+  when:
+    - ansible_facts['distribution'] in ['RedHat', 'Rocky']
+    - manage_docker_ce_repo | bool
 
 - name: Install Docker CE (RHEL/Rocky Linux)
   ansible.builtin.dnf:

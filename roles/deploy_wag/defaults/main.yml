@@ -14,6 +14,10 @@ custom_ssh_product_repo_url: ""
 custom_ssh_product_repo_file: ""
 ssh_product_repo_gpg_key_url: "https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc"
 
+# Additional repository management settings
+manage_epel_repo: true
+manage_docker_ce_repo: true
+
 # Ansible connection settings
 REMOTE_USER: "{{ REMOTE_USER | default('rocky') }}"
 BECOME: "{{ BECOME | default('no') }}"

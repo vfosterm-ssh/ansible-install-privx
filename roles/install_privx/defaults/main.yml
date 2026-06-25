@@ -16,3 +16,7 @@ manage_ssh_product_repo: true
 custom_ssh_product_repo_url: ""
 custom_ssh_product_repo_file: ""
 ssh_product_repo_gpg_key_url: "https://product-repository.ssh.com/info.fi-ssh.com-pubkey.asc"
+
+# Additional repository/module management settings
+manage_epel_repo: true
+manage_postgresql_module: true

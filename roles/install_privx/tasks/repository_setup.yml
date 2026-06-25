@@ -33,6 +33,7 @@
         disable_gpg_check: true
       remote_user: "{{ REMOTE_USER | default('root') }}"
       become: "{{ BECOME | default('no') }}"
+      when: manage_epel_repo | bool
 
     - name: Install PostgreSQL server for RHEL/Rocky 9
       ansible.builtin.dnf:
@@ -102,6 +103,7 @@
         disable_gpg_check: true
       remote_user: "{{ REMOTE_USER | default('root') }}"
       become: "{{ BECOME | default('no') }}"
+      when: manage_epel_repo | bool
 
     - name: Install epel-release for RHEL/Rocky 8
       ansible.builtin.dnf:
@@ -109,6 +111,7 @@
         state: present
       remote_user: "{{ REMOTE_USER | default('root') }}"
       become: "{{ BECOME | default('no') }}"
+      when: manage_epel_repo | bool
 
     - name: Install firewalld for RHEL/Rocky 8
       ansible.builtin.dnf:
@@ -123,6 +126,7 @@
       remote_user: "{{ REMOTE_USER | default('root') }}"
       become: "{{ BECOME | default('no') }}"
       changed_when: true
+      when: manage_postgresql_module | bool
 
     - name: Install PostgreSQL server for RHEL/Rocky 8
       ansible.builtin.dnf:

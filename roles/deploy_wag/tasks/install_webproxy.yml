@@ -12,6 +12,7 @@
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
     - ansible_facts['distribution_major_version'] == '9'
+    - manage_epel_repo | bool
 
 # Install EPEL repository for RHEL/Rocky Linux 8
 - name: Install EPEL repository for RHEL/Rocky 8
@@ -24,6 +25,7 @@
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
     - ansible_facts['distribution_major_version'] == '8'
+    - manage_epel_repo | bool
 
 - name: Install firewalld (dnf)
   ansible.builtin.dnf:
