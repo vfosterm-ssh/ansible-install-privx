@@ -8,8 +8,8 @@
 - name: PrivX Deployment - Installation Phase
   hosts: privx_primary
   gather_facts: true
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   tags:
     - install
     - full_deployment
@@ -23,8 +23,8 @@
 - name: PrivX Deployment - Single Node Configuration Phase
   hosts: privx_primary
   gather_facts: true
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   tags:
     - configure
     - full_deployment

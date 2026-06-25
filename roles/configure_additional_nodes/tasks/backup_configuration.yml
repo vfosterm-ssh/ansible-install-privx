@@ -3,8 +3,8 @@
   ansible.builtin.command:
     cmd: /opt/privx/scripts/backup.sh
   register: backup_result
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display backup script output
   ansible.builtin.debug:
@@ -28,8 +28,8 @@
   ansible.builtin.stat:
     path: "{{ backup_directory_path }}"
   register: backup_dir_stat
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when: backup_directory_path is defined
 
 - name: Verify backup directory and log file
@@ -54,8 +54,8 @@
     format: gz
     mode: '0644'
   register: backup_archive
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display backup archive information
   ansible.builtin.debug:
@@ -92,8 +92,8 @@
     src: "{{ backup_archive.dest }}"
     dest: "./backups/{{ inventory_hostname }}-{{ backup_dir_name }}.tar.gz"
     flat: true
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Create local backups directory info
   ansible.builtin.debug:

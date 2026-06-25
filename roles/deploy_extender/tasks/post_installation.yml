@@ -5,8 +5,8 @@
   ansible.builtin.command:
     cmd: /opt/privx/scripts/extender-postinstall.sh
   register: postinstall_result
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   timeout: 120
 
 - name: Display postinstall script output
@@ -23,8 +23,8 @@
     state: started
     enabled: true
   register: extender_service_status
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display service status
   ansible.builtin.debug:

@@ -5,5 +5,4 @@
 remote_backup_dir: /var/backups/privx/
 
 # Ansible connection settings
-REMOTE_USER: "{{ REMOTE_USER | default('root') }}"
-BECOME: "{{ BECOME | default('no') }}"
+ansible_user: "{{ ansible_user | default('root') }}"

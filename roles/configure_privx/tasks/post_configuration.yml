@@ -7,8 +7,8 @@
     state: started
     enabled: true
   register: service_status
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 
 - name: Display configuration completion

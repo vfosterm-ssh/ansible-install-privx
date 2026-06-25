@@ -31,23 +31,23 @@
         name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
         state: present
         disable_gpg_check: true
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when: manage_epel_repo | bool
 
     - name: Install PostgreSQL server for RHEL/Rocky 9
       ansible.builtin.dnf:
         name: postgresql-server
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Install firewalld for RHEL/Rocky 9
       ansible.builtin.dnf:
         name: firewalld
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Display SSH product repository management status for RHEL/Rocky 9
       ansible.builtin.debug:
@@ -59,8 +59,8 @@
       ansible.builtin.rpm_key:
         key: "{{ ssh_product_repo_gpg_key_url }}"
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when: manage_ssh_product_repo | bool
 
     - name: Add SSH.COM repository from local file for RHEL/Rocky 9
@@ -68,8 +68,8 @@
         src: "{{ custom_ssh_product_repo_file }}"
         dest: /etc/yum.repos.d/ssh-products.repo
         mode: '0644'
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when:
         - manage_ssh_product_repo | bool
         - custom_ssh_product_repo_file | length > 0
@@ -79,8 +79,8 @@
         url: "{{ ssh_product_repo_url }}"
         dest: /etc/yum.repos.d/ssh-products.repo
         mode: '0644'
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when:
         - manage_ssh_product_repo | bool
         - custom_ssh_product_repo_file | length == 0
@@ -101,30 +101,30 @@
         name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
         state: present
         disable_gpg_check: true
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when: manage_epel_repo | bool
 
     - name: Install epel-release for RHEL/Rocky 8
       ansible.builtin.dnf:
         name: epel-release
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when: manage_epel_repo | bool
 
     - name: Install firewalld for RHEL/Rocky 8
       ansible.builtin.dnf:
         name: firewalld
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Enable PostgreSQL 16 module for RHEL/Rocky 8
       ansible.builtin.command:
         cmd: dnf module enable postgresql:16 -y
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       changed_when: true
       when: manage_postgresql_module | bool
 
@@ -132,8 +132,8 @@
       ansible.builtin.dnf:
         name: postgresql-server
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Display SSH product repository management status for RHEL/Rocky 8
       ansible.builtin.debug:
@@ -145,8 +145,8 @@
       ansible.builtin.rpm_key:
         key: "{{ ssh_product_repo_gpg_key_url }}"
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when: manage_ssh_product_repo | bool
 
     - name: Add SSH.COM repository from local file for RHEL/Rocky 8
@@ -154,8 +154,8 @@
         src: "{{ custom_ssh_product_repo_file }}"
         dest: /etc/yum.repos.d/ssh-products.repo
         mode: '0644'
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when:
         - manage_ssh_product_repo | bool
         - custom_ssh_product_repo_file | length > 0
@@ -165,8 +165,8 @@
         url: "{{ ssh_product_repo_url }}"
         dest: /etc/yum.repos.d/ssh-products.repo
         mode: '0644'
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when:
         - manage_ssh_product_repo | bool
         - custom_ssh_product_repo_file | length == 0
@@ -186,22 +186,22 @@
       ansible.builtin.dnf:
         name: postgresql15-server
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Install libxcrypt-compat for Amazon Linux 2023
       ansible.builtin.dnf:
         name: libxcrypt-compat
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Install firewalld for Amazon Linux 2023
       ansible.builtin.dnf:
         name: firewalld
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Display SSH product repository management status for Amazon Linux 2023
       ansible.builtin.debug:
@@ -213,8 +213,8 @@
       ansible.builtin.rpm_key:
         key: "{{ ssh_product_repo_gpg_key_url }}"
         state: present
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when: manage_ssh_product_repo | bool
 
     - name: Add SSH.COM repository from local file for Amazon Linux 2023
@@ -222,8 +222,8 @@
         src: "{{ custom_ssh_product_repo_file }}"
         dest: /etc/yum.repos.d/ssh-products.repo
         mode: '0644'
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when:
         - manage_ssh_product_repo | bool
         - custom_ssh_product_repo_file | length > 0
@@ -233,8 +233,8 @@
         url: "{{ ssh_product_repo_url }}"
         dest: /etc/yum.repos.d/ssh-products.repo
         mode: '0644'
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       when:
         - manage_ssh_product_repo | bool
         - custom_ssh_product_repo_file | length == 0

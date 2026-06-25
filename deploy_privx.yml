@@ -10,8 +10,8 @@
 - name: PrivX Deployment - Installation Phase
   hosts: privx_primary:privx_additional_nodes
   gather_facts: true
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   tags:
     - install
     - full_deployment
@@ -37,6 +37,7 @@
             path: "{{ postgres_ssl_cert_file }}"
           register: pg_cert_file
           delegate_to: localhost
+          become: false
 
         - name: Fail if PostgreSQL SSL cert file is missing
           ansible.builtin.fail:
@@ -48,10 +49,11 @@
               {{ postgres_ssl_cert_file }}.
           when: not pg_cert_file.stat.exists
           delegate_to: localhost
+          become: false
 
         - name: Copy PostgreSQL SSL certificate
-          remote_user: "{{ REMOTE_USER | default('root') }}"
-          become: "{{ BECOME | default('no') }}"
+          remote_user: "{{ ansible_user | default('root') }}"
+          become: true
           ansible.builtin.copy:
             src: "./{{ postgres_ssl_cert_file }}"
             dest: /opt/privx/etc/privx-db-trust-anchor.pem
@@ -67,8 +69,8 @@
 - name: PrivX Deployment - Primary Node Configuration Phase
   hosts: privx_primary
   gather_facts: false
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   tags:
     - configure_primary
     - configure
@@ -94,6 +96,7 @@
         path: "./ca_chain.crt"
       register: ca_chain_file
       delegate_to: localhost
+      become: false
 
     - name: Include CA chain certificate deployment tasks
       ansible.builtin.include_tasks: roles/configure_privx/tasks/deploy_ca_chain.yml
@@ -111,8 +114,7 @@
 - name: PrivX Deployment - Backup Creation (if needed)
   hosts: privx_primary
   gather_facts: false
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
   tags:
     - configure_additional
     - configure
@@ -122,8 +124,8 @@
       ansible.builtin.stat:
         path: /opt/privx/keyvault
       register: additional_nodes_keyvault_status
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       delegate_to: "{{ item }}"
       loop: "{{ groups['privx_additional_nodes'] }}"
       when: groups['privx_additional_nodes'] is defined and groups['privx_additional_nodes'] | length > 0

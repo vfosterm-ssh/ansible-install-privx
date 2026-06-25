@@ -17,8 +17,8 @@
     name: "{{ extender_package_name }}"
     state: present
   register: extender_install_result
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
 
@@ -32,8 +32,8 @@
     cmd: rpm -q {{ extender_package_name }}
   register: extender_verify
   changed_when: false
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display installed PrivX Extender version
   ansible.builtin.debug:

@@ -9,8 +9,8 @@
     owner: root
     group: root
   register: config_deployed
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display configuration deployment result
   ansible.builtin.debug:

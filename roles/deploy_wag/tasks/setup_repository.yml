@@ -24,8 +24,8 @@
   ansible.builtin.rpm_key:
     key: "{{ ssh_product_repo_gpg_key_url }}"
     state: present
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when: manage_ssh_product_repo | bool
 
 # Red Hat/Rocky Linux 8 repository setup
@@ -34,8 +34,8 @@
     src: "{{ custom_ssh_product_repo_file }}"
     dest: /etc/yum.repos.d/ssh-products.repo
     mode: '0644'
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when:
     - manage_ssh_product_repo | bool
     - custom_ssh_product_repo_file | length > 0
@@ -47,8 +47,8 @@
     url: "{{ ssh_product_repo_url }}"
     dest: /etc/yum.repos.d/ssh-products.repo
     mode: '0644'
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when:
     - manage_ssh_product_repo | bool
     - custom_ssh_product_repo_file | length == 0
@@ -61,8 +61,8 @@
     src: "{{ custom_ssh_product_repo_file }}"
     dest: /etc/yum.repos.d/ssh-products.repo
     mode: '0644'
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when:
     - manage_ssh_product_repo | bool
     - custom_ssh_product_repo_file | length > 0
@@ -74,8 +74,8 @@
     url: "{{ ssh_product_repo_url }}"
     dest: /etc/yum.repos.d/ssh-products.repo
     mode: '0644'
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when:
     - manage_ssh_product_repo | bool
     - custom_ssh_product_repo_file | length == 0

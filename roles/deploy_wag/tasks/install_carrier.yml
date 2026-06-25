@@ -4,8 +4,8 @@
 - name: Add Docker CE repository for RHEL/Rocky Linux
   ansible.builtin.command:
     cmd: yum config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
     - manage_docker_ce_repo | bool
@@ -14,8 +14,8 @@
   ansible.builtin.dnf:
     name: docker-ce
     state: present
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when: ansible_facts['distribution'] in ['RedHat', 'Rocky']
 
 - name: Start and enable Docker service
@@ -23,16 +23,16 @@
     name: docker
     state: started
     enabled: true
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Install PrivX Carrier package (dnf)
   ansible.builtin.dnf:
     name: "{{ carrier_package_name }}"
     state: present
   register: carrier_install_result
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
 
@@ -46,8 +46,8 @@
     cmd: rpm -q PrivX-Carrier
   register: carrier_verify
   changed_when: false
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display installed PrivX Carrier version
   ansible.builtin.debug:

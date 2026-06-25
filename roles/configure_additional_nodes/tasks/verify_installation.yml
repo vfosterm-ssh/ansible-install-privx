@@ -7,8 +7,8 @@
   register: privx_installed
   failed_when: false
   changed_when: false
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Verify PrivX installation on additional nodes
   ansible.builtin.assert:
@@ -27,8 +27,8 @@
   failed_when: false
   changed_when: false
   delegate_to: "{{ groups['privx_primary'][0] }}"
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Verify additional node version matches primary
   ansible.builtin.assert:
@@ -46,8 +46,8 @@
   ansible.builtin.stat:
     path: /opt/privx/keyvault
   register: keyvault_exists
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Skip configuration if keyvault exists
   ansible.builtin.debug:

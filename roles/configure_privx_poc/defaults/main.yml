@@ -7,5 +7,4 @@ database_name: privx
 database_username: privx
 
 # Ansible connection settings
-REMOTE_USER: "{{ REMOTE_USER | default('rocky') }}"
-BECOME: "{{ BECOME | default('no') }}"
+ansible_user: "{{ ansible_user | default('rocky') }}"

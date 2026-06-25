@@ -11,6 +11,8 @@
     src: config.j2
     dest: "{{ CONFIGURATION_SCRIPT }}"
     mode: '0700'
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display installation log location
   ansible.builtin.debug:
@@ -24,6 +26,8 @@
   ansible.builtin.command: "{{ CONFIGURATION_SCRIPT }}"
   register: config_result
   timeout: 600
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display configuration script output
   ansible.builtin.debug:
@@ -37,3 +41,5 @@
   ansible.builtin.file:
     path: "{{ CONFIGURATION_SCRIPT }}"
     state: absent
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true

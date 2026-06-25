@@ -77,8 +77,7 @@ database_sslmode=require
 postgres_ssl_cert_file=./privx-db-trust-anchor.pem
 
 # Ansible connection settings
-REMOTE_USER=rocky
-BECOME=yes
+ansible_user=rocky
 ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
 ```
 
@@ -333,11 +332,8 @@ These variables have default values set in `inventory/hosts.ini` and can be cust
 
 ### Connection Variables
 
-- `REMOTE_USER` (default: `root`)  
+- `ansible_user` (default: `root`)  
   SSH user for connecting to target servers
-
-- `BECOME` (default: `no`)  
-  Whether to use sudo/become for privilege escalation
 
 ### Debug Variables
 
@@ -445,6 +441,7 @@ ansible-playbook -i inventory deploy_extender.yml
 # Install WAG components
 ansible-playbook -i inventory deploy_wag.yml
 ```
+
 
 ## Troubleshooting
 

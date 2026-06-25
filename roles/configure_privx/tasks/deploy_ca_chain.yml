@@ -5,8 +5,8 @@
   ansible.builtin.stat:
     path: "/etc/nginx/ssl/ca_chain.crt"
   register: existing_ca_chain
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Check if local CA chain certificate exists
   ansible.builtin.stat:
@@ -21,8 +21,8 @@
     path: "/etc/nginx/ssl/ca_chain.crt"
     checksum_algorithm: sha256
   register: remote_ca_chain
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when: existing_ca_chain.stat.exists
 
 - name: Set CA chain deployment needed fact
@@ -47,16 +47,16 @@
     owner: root
     group: root
   register: ca_chain_uploaded
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when: ca_chain_deployment_needed
 
 - name: Update trust anchor with CA chain certificate
   ansible.builtin.command:
     cmd: /opt/privx/scripts/init_nginx.sh update-trust /etc/nginx/ssl/ca_chain.crt
   register: trust_anchor_result
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   when: ca_chain_deployment_needed
 
 - name: Display trust anchor update result

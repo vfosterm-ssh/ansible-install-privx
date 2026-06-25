@@ -12,8 +12,8 @@
         owner: root
         group: root
       register: carrier_config_deployed
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Display carrier configuration deployment result
       ansible.builtin.debug:
@@ -30,8 +30,8 @@
         owner: root
         group: root
       register: webproxy_config_deployed
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
     - name: Display web proxy configuration deployment result
       ansible.builtin.debug:

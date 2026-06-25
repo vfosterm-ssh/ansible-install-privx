@@ -7,8 +7,8 @@
     name: "{{ privx_package_name }}"
     state: present
   register: privx_install_result
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
 
 - name: Display installation result for secondary node
   ansible.builtin.debug:

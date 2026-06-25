@@ -8,8 +8,8 @@
       ansible.builtin.command:
         cmd: /opt/privx/scripts/carrier-postinstall.sh
       register: carrier_postinstall_result
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       timeout: 120
 
     - name: Display carrier postinstall script output
@@ -26,8 +26,8 @@
         state: started
         enabled: true
       register: carrier_service_status
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
 - name: Run Web Proxy postinstall script
   when: is_webproxy
@@ -36,8 +36,8 @@
       ansible.builtin.command:
         cmd: /opt/privx/scripts/web-proxy-postinstall.sh
       register: webproxy_postinstall_result
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
       timeout: 120
 
     - name: Display web proxy postinstall script output
@@ -54,8 +54,8 @@
         state: started
         enabled: true
       register: webproxy_service_status
-      remote_user: "{{ REMOTE_USER | default('root') }}"
-      become: "{{ BECOME | default('no') }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
 
 - name: Display Carrier installation completion
   ansible.builtin.debug:

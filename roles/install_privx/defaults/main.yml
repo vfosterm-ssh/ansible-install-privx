@@ -2,8 +2,7 @@
 # PrivX Installation Role - Default Variables
 
 # Ansible connection settings
-REMOTE_USER: "{{ REMOTE_USER | default('root') }}"
-BECOME: "{{ BECOME | default('no') }}"
+ansible_user: "{{ ansible_user | default('root') }}"
 
 # PrivX version settings
 # If privx_version is defined, install specific version (e.g., "42.2" or exact package version "42.2-57")

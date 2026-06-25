@@ -7,8 +7,8 @@
   register: global_wag_check
   failed_when: false
   changed_when: false
-  remote_user: "{{ REMOTE_USER | default('root') }}"
-  become: "{{ BECOME | default('no') }}"
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
   tags: status_check
 
 - name: Set PrivX WAG installation status fact
