@@ -1,0 +1,87 @@
+---
+# PrivX Uninstall Playbook
+# This playbook removes PrivX packages and deletes PrivX data directories.
+
+- name: PrivX Uninstall
+  hosts: privx_primary:privx_additional_nodes:privxextender:privxcarrier:privxwebproxy
+  gather_facts: true
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  tasks:
+    - name: Verify database cleanup variables are defined
+      ansible.builtin.assert:
+        that:
+          - database_name is defined
+          - database_username is defined
+          - database_password is defined
+          - postgres_address is defined
+          - database_port is defined
+        fail_msg: |
+          Database cleanup requires the following variables:
+            - database_name
+            - database_username
+            - database_password
+            - postgres_address
+            - database_port
+      run_once: true
+      delegate_to: "{{ groups['privx_primary'][0] }}"
+
+    - name: Delete all tables from PrivX database on primary node
+      ansible.builtin.shell:
+        cmd: >
+          /usr/bin/psql
+          "host={{ postgres_address }} port={{ database_port }} dbname={{ database_name }} user={{ database_username }}"
+          -v ON_ERROR_STOP=1
+          -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN
+          (SELECT schemaname, tablename FROM pg_tables WHERE schemaname = 'public')
+          LOOP EXECUTE format('DROP TABLE IF EXISTS %I.%I CASCADE', r.schemaname, r.tablename);
+          END LOOP; END \$\$;"
+      environment:
+        PGPASSWORD: "{{ database_password }}"
+      run_once: true
+      delegate_to: "{{ groups['privx_primary'][0] }}"
+      remote_user: "{{ ansible_user | default('root') }}"
+      become: true
+
+    - name: Remove PrivX core package
+      ansible.builtin.dnf:
+        name: PrivX
+        state: absent
+      become: true
+      when:
+        - inventory_hostname in groups['privx_primary'] or inventory_hostname in groups['privx_additional_nodes']
+
+    - name: Remove PrivX Extender packages
+      ansible.builtin.dnf:
+        name:
+          - PrivX-Extender
+          - PrivX-Extender-FIPS
+        state: absent
+      become: true
+      when:
+        - inventory_hostname in groups['privxextender']
+
+    - name: Remove PrivX Carrier package
+      ansible.builtin.dnf:
+        name: PrivX-Carrier
+        state: absent
+      become: true
+      when:
+        - inventory_hostname in groups['privxcarrier']
+
+    - name: Remove PrivX Web Proxy package
+      ansible.builtin.dnf:
+        name: PrivX-Web-Proxy
+        state: absent
+      become: true
+      when:
+        - inventory_hostname in groups['privxwebproxy']
+
+    - name: Delete PrivX directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      become: true
+      loop:
+        - /opt/privx
+        - /var/backups/privx

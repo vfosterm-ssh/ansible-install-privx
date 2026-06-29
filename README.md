@@ -37,8 +37,10 @@ Refer to [PrivX Documentation](https://privx.docs.ssh.com/docs/deployment/prepar
 ```text
 .
 ├── deploy_privx.yml               # Main PrivX deployment
+├── deploy_privx_poc.yml           # PrivX PoC single-node deployment
 ├── deploy_extender.yml            # Extender deployment
 ├── deploy_wag.yml                 # WAG deployment
+├── uninstall.yml                  # PrivX uninstall playbook
 ├── inventory/hosts.ini            # Inventory configuration
 ├── configuration_files/           # Component configuration files
 └── roles/                         # Ansible roles
@@ -441,6 +443,16 @@ ansible-playbook -i inventory deploy_extender.yml
 # Install WAG components
 ansible-playbook -i inventory deploy_wag.yml
 ```
+
+## Uninstall
+
+Use `uninstall.yml` to remove PrivX packages and related components from target hosts.
+
+```bash
+ansible-playbook -i inventory uninstall.yml
+```
+
+Review the playbook and inventory before running it, especially in shared or existing environments where hosts may contain components you want to preserve.
 
 
 ## Troubleshooting
