@@ -33,7 +33,10 @@
           "host={{ postgres_address }} port={{ database_port }} dbname={{ database_name }} user={{ database_username }}"
           -v ON_ERROR_STOP=1
           -c "DO \$\$ DECLARE r RECORD; BEGIN FOR r IN
-          (SELECT schemaname, tablename FROM pg_tables WHERE schemaname = 'public')
+          (SELECT schemaname, tablename
+          FROM pg_tables
+          WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+          AND schemaname NOT LIKE 'pg_toast%')
           LOOP EXECUTE format('DROP TABLE IF EXISTS %I.%I CASCADE', r.schemaname, r.tablename);
           END LOOP; END \$\$;"
       environment:
