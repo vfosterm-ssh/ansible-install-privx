@@ -1,9 +1,13 @@
 ---
 # Restore backup on additional nodes
 
+- name: Normalize remote backup directory path
+  ansible.builtin.set_fact:
+    normalized_remote_backup_dir: "{{ remote_backup_dir | regex_replace('/+$', '') }}"
+
 - name: Create remote backup directory
   ansible.builtin.file:
-    path: "{{ remote_backup_dir }}"
+    path: "{{ normalized_remote_backup_dir }}"
     state: directory
     mode: '0755'
   remote_user: "{{ ansible_user | default('root') }}"
@@ -12,15 +16,15 @@
 - name: Copy backup archive to additional nodes
   ansible.builtin.copy:
     src: "{{ backup_archive_path }}"
-    dest: "{{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
+    dest: "{{ normalized_remote_backup_dir }}/{{ backup_archive_path | basename }}"
     mode: '0644'
   remote_user: "{{ ansible_user | default('root') }}"
   become: true
 
 - name: Extract backup archive on additional nodes
   ansible.builtin.unarchive:
-    src: "{{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
-    dest: "{{ remote_backup_dir }}"
+    src: "{{ normalized_remote_backup_dir }}/{{ backup_archive_path | basename }}"
+    dest: "{{ normalized_remote_backup_dir }}"
     remote_src: true
     mode: '0755'
   register: extract_result
@@ -29,7 +33,7 @@
 
 - name: Find extracted backup directory
   ansible.builtin.find:
-    paths: "{{ remote_backup_dir }}"
+    paths: "{{ normalized_remote_backup_dir }}"
     file_type: directory
     patterns: "*_*_*"
   register: extracted_dirs
@@ -48,7 +52,7 @@
       - "                       BACKUP DIRECTORY INFORMATION                           "
       - "════════════════════════════════════════════════════════════════════════════════"
       - ""
-      - "• Archive: {{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
+      - "• Archive: {{ normalized_remote_backup_dir }}/{{ backup_archive_path | basename }}"
       - "• Extracted to: {{ backup_directory_path }}"
       - "• Directory Name: {{ backup_directory_path | basename }}"
       - "• Node: {{ inventory_hostname }}"
@@ -86,7 +90,7 @@
 
 - name: Clean up backup files on additional nodes
   ansible.builtin.file:
-    path: "{{ remote_backup_dir }}/{{ backup_archive_path | basename }}"
+    path: "{{ normalized_remote_backup_dir }}/{{ backup_archive_path | basename }}"
     state: absent
   remote_user: "{{ ansible_user | default('root') }}"
   become: true

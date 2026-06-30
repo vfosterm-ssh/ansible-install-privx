@@ -47,19 +47,33 @@
   ansible.builtin.set_fact:
     backup_dir_name: "{{ backup_directory_path | basename }}"
 
+- name: Set backup archive destination path
+  ansible.builtin.set_fact:
+    backup_archive_path_remote: "/var/backups/privx/{{ backup_dir_name }}.tar.gz"
+
 - name: Create compressed backup archive
-  ansible.builtin.archive:
-    path: "{{ backup_directory_path }}"
-    dest: "/var/backups/privx/{{ backup_dir_name }}.tar.gz"
-    format: gz
+  ansible.builtin.command:
+    cmd: tar -czf {{ backup_archive_path_remote }} -C {{ backup_directory_path | dirname }} {{ backup_dir_name }}
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+
+- name: Set backup archive permissions
+  ansible.builtin.file:
+    path: "{{ backup_archive_path_remote }}"
     mode: '0644'
-  register: backup_archive
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+
+- name: Read backup archive metadata
+  ansible.builtin.stat:
+    path: "{{ backup_archive_path_remote }}"
+  register: backup_archive_stat
   remote_user: "{{ ansible_user | default('root') }}"
   become: true
 
 - name: Display backup archive information
   ansible.builtin.debug:
-    msg: "Backup archive created: {{ backup_archive.dest }} ({{ backup_archive.size | default('Unknown') }} bytes)"
+    msg: "Backup archive created: {{ backup_archive_path_remote }} ({{ backup_archive_stat.stat.size | default('Unknown') }} bytes)"
 
 - name: Ensure local backups directory exists
   ansible.builtin.file:
@@ -89,7 +103,7 @@
 
 - name: Fetch backup archive to local machine
   ansible.builtin.fetch:
-    src: "{{ backup_archive.dest }}"
+    src: "{{ backup_archive_path_remote }}"
     dest: "./backups/{{ inventory_hostname }}-{{ backup_dir_name }}.tar.gz"
     flat: true
   remote_user: "{{ ansible_user | default('root') }}"
