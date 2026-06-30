@@ -1,0 +1,10 @@
+/var/log/privx/*.log {
+  su root privx
+  daily
+  copytruncate
+  size 20M
+  rotate 5
+  dateext
+  compress
+  notifempty
+}

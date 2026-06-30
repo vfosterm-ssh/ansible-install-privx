@@ -1,0 +1,19 @@
+---
+# Configure log rotation for PrivX log files.
+
+- name: Install logrotate package
+  ansible.builtin.dnf:
+    name: logrotate
+    state: present
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+
+- name: Deploy PrivX logrotate configuration
+  ansible.builtin.template:
+    src: logrotate_privx.j2
+    dest: /etc/logrotate.d/privx
+    owner: root
+    group: root
+    mode: '0644'
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
