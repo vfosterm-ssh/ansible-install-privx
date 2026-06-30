@@ -61,7 +61,7 @@
       - "Troubleshooting:"
       - "==============="
       - "If you encounter issues during the Execute PrivX configuration script"
-      - "Consult the installation logs located at /var/logs/privx-install.log"
+      - "Consult the installation logs located at /var/log/privx-install.log"
   when: not keyvault_already_exists
 
 - name: Execute PrivX configuration script
