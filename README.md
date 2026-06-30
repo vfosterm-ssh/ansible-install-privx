@@ -346,7 +346,7 @@ These variables have default values set in `inventory/hosts.ini` and can be cust
 
 - `privx_version` (optional)  
   Install a specific PrivX and component version. Supports either a version prefix such as `42.2` or an exact package version such as `42.2-57`.  
-  If not defined, installs latest available version  
+  If not defined, installs latest available version. After installation, the playbook attempts to pin installed PrivX packages and related components with `dnf versionlock` to prevent accidental upgrades. Versionlock setup is best effort and does not abort installation.  
   **Important**: When adding nodes/components to existing deployments, version consistency is automatically validated
 
 ## Safety Features
