@@ -209,6 +209,11 @@
     - summary
     - full_deployment
   tasks:
+    - name: Build PrivX server IP list
+      ansible.builtin.set_fact:
+        privx_server_ips: "{{ (privx_server_ips | default([])) + [hostvars[item].ansible_host | default(item)] }}"
+      loop: "{{ groups['privx_primary'] + (groups['privx_additional_nodes'] | default([])) }}"
+
     - name: Display deployment completion summary
       ansible.builtin.debug:
         msg:
@@ -221,6 +226,7 @@
           - "Access Information:"
           - "=================="
           - "• URL: https://{{ privx_dns_name }}"
+          - "• Server IPs: {{ privx_server_ips | join(', ') }}"
           - "• Username: {{ privx_superuser | default('admin') }}"
           - "• Password: {{ superuser_password }}"
           - ""
