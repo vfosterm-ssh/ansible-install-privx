@@ -20,7 +20,7 @@
       - "Troubleshooting:"
       - "==============="
       - "If you encounter issues during the Execute PrivX configuration script"
-      - "Consult the installation logs located at /var/logs/privx-install.log"
+      - "Consult the installation logs located at /var/log/privx-install.log"
 
 - name: Execute PrivX configuration script
   ansible.builtin.command: "{{ CONFIGURATION_SCRIPT }}"
