@@ -38,6 +38,11 @@
   ansible.builtin.include_tasks: install_extender.yml
   when: not extender_already_installed
 
+- name: Configure PrivX log rotation on Extender hosts
+  ansible.builtin.include_role:
+    name: install_privx
+    tasks_from: configure_logrotate.yml
+
 - name: Include configuration deployment tasks
   ansible.builtin.include_tasks: deploy_configuration.yml
   when: not extender_already_installed

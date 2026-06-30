@@ -10,6 +10,7 @@ extender_fips_enabled: false
 # If not defined, install latest available version
 extender_base_package_name: "{{ 'PrivX-Extender-' + privx_version if privx_version is defined else 'PrivX-Extender' }}"
 extender_fips_package_name: "{{ 'PrivX-Extender-FIPS-' + privx_version if privx_version is defined else 'PrivX-Extender-FIPS' }}"
+extender_versionlock_plugin_package: python3-dnf-plugin-versionlock
 
 # SSH.COM product repository settings
 # These can be overridden via inventory or -e.

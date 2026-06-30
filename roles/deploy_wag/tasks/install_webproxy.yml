@@ -66,10 +66,40 @@
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
 
+- name: Install dnf versionlock plugin for PrivX Web Proxy
+  ansible.builtin.dnf:
+    name: "{{ wag_versionlock_plugin_package }}"
+    state: present
+  register: webproxy_versionlock_plugin_install
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+
+- name: Pin installed PrivX Web Proxy package version
+  ansible.builtin.command:
+    cmd: dnf versionlock add {{ webproxy_package_name }}
+  register: webproxy_versionlock_add
+  changed_when: "'Adding versionlock on:' in webproxy_versionlock_add.stdout"
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+    and webproxy_versionlock_plugin_install.rc == 0
+
 - name: Display Web Proxy installation result
   ansible.builtin.debug:
     msg: "✓ PrivX Web Proxy installed on {{ inventory_hostname }}"
   when: webproxy_install_result.changed
+
+- name: Display PrivX Web Proxy version lock status
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'PrivX Web Proxy version locked'
+         if (webproxy_versionlock_add is defined and webproxy_versionlock_add.rc == 0)
+         else 'PrivX Web Proxy version lock skipped or failed but installation continues' }}
+      on {{ inventory_hostname }}: {{ webproxy_package_name }}
+  when: ansible_facts['pkg_mgr'] == 'dnf'
 
 - name: Verify PrivX Web Proxy installation
   ansible.builtin.command:

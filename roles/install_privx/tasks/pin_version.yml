@@ -1,0 +1,32 @@
+---
+# Pin the installed PrivX package version to prevent accidental upgrades.
+
+- name: Install dnf versionlock plugin
+  ansible.builtin.dnf:
+    name: "{{ privx_versionlock_plugin_package }}"
+    state: present
+  register: privx_versionlock_plugin_install
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+
+- name: Pin installed PrivX package version
+  ansible.builtin.command:
+    cmd: dnf versionlock add PrivX
+  register: privx_versionlock_add
+  changed_when: "'Adding versionlock on:' in privx_versionlock_add.stdout"
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+    and privx_versionlock_plugin_install.rc == 0
+
+- name: Display PrivX version lock status
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'PrivX version locked'
+         if (privx_versionlock_add is defined and privx_versionlock_add.rc == 0)
+         else 'PrivX version lock skipped or failed but installation continues' }}
+      on {{ inventory_hostname }}: PrivX
+  when: ansible_facts['pkg_mgr'] == 'dnf'

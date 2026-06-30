@@ -22,10 +22,40 @@
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
 
+- name: Install dnf versionlock plugin for PrivX Extender
+  ansible.builtin.dnf:
+    name: "{{ extender_versionlock_plugin_package }}"
+    state: present
+  register: extender_versionlock_plugin_install
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+
+- name: Pin installed PrivX Extender package version
+  ansible.builtin.command:
+    cmd: dnf versionlock add {{ extender_package_name }}
+  register: extender_versionlock_add
+  changed_when: "'Adding versionlock on:' in extender_versionlock_add.stdout"
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+    and extender_versionlock_plugin_install.rc == 0
+
 - name: Display installation result
   ansible.builtin.debug:
     msg: "PrivX Extender successfully installed on {{ inventory_hostname }}"
   when: extender_install_result.changed
+
+- name: Display PrivX Extender version lock status
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'PrivX Extender version locked'
+         if (extender_versionlock_add is defined and extender_versionlock_add.rc == 0)
+         else 'PrivX Extender version lock skipped or failed but installation continues' }}
+      on {{ inventory_hostname }}: {{ extender_package_name }}
+  when: ansible_facts['pkg_mgr'] == 'dnf'
 
 - name: Verify PrivX Extender installation
   ansible.builtin.command:

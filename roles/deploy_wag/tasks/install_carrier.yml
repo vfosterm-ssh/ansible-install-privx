@@ -36,10 +36,40 @@
   when:
     - ansible_facts['distribution'] in ['RedHat', 'Rocky']
 
+- name: Install dnf versionlock plugin for PrivX Carrier
+  ansible.builtin.dnf:
+    name: "{{ wag_versionlock_plugin_package }}"
+    state: present
+  register: carrier_versionlock_plugin_install
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+
+- name: Pin installed PrivX Carrier package version
+  ansible.builtin.command:
+    cmd: dnf versionlock add {{ carrier_package_name }}
+  register: carrier_versionlock_add
+  changed_when: "'Adding versionlock on:' in carrier_versionlock_add.stdout"
+  failed_when: false
+  remote_user: "{{ ansible_user | default('root') }}"
+  become: true
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+    and carrier_versionlock_plugin_install.rc == 0
+
 - name: Display Carrier installation result
   ansible.builtin.debug:
     msg: "✓ PrivX Carrier installed on {{ inventory_hostname }}"
   when: carrier_install_result.changed
+
+- name: Display PrivX Carrier version lock status
+  ansible.builtin.debug:
+    msg: >-
+      {{ 'PrivX Carrier version locked'
+         if (carrier_versionlock_add is defined and carrier_versionlock_add.rc == 0)
+         else 'PrivX Carrier version lock skipped or failed but installation continues' }}
+      on {{ inventory_hostname }}: {{ carrier_package_name }}
+  when: ansible_facts['pkg_mgr'] == 'dnf'
 
 - name: Verify PrivX Carrier installation
   ansible.builtin.command:

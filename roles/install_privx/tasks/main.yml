@@ -44,3 +44,9 @@
   when:
     - not privx_already_installed
     - inventory_hostname in groups['privx_additional_nodes']
+
+- name: Include PrivX version lock tasks
+  ansible.builtin.include_tasks: pin_version.yml
+  when:
+    - not privx_already_installed
+    - inventory_hostname in groups['privx_primary'] or inventory_hostname in groups['privx_additional_nodes']

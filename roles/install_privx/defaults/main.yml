@@ -8,6 +8,7 @@ ansible_user: "{{ ansible_user | default('root') }}"
 # If privx_version is defined, install specific version (e.g., "42.2" or exact package version "42.2-57")
 # If not defined, install latest available version
 privx_package_name: "{{ 'PrivX-' + privx_version if privx_version is defined else 'PrivX' }}"
+privx_versionlock_plugin_package: python3-dnf-plugin-versionlock
 
 # SSH.COM product repository settings
 # These can be overridden via inventory or -e.
